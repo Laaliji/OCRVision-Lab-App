@@ -3,120 +3,377 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Application OCR pour Images à Faible Résolution</title>
+    <title>OCR Vision Lab</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    animation: {
+                        blob: "blob 7s infinite",
+                        float: "float 6s ease-in-out infinite",
+                    },
+                    keyframes: {
+                        blob: {
+                            "0%": {
+                                transform: "translate(0px, 0px) scale(1)",
+                            },
+                            "33%": {
+                                transform: "translate(30px, -50px) scale(1.1)",
+                            },
+                            "66%": {
+                                transform: "translate(-20px, 20px) scale(0.9)",
+                            },
+                            "100%": {
+                                transform: "translate(0px, 0px) scale(1)",
+                            },
+                        },
+                        float: {
+                            "0%, 100%": {
+                                transform: "translateY(0)",
+                            },
+                            "50%": {
+                                transform: "translateY(-20px)",
+                            },
+                        },
+                    },
+                },
+            },
+        };
+    </script>
     <style>
-        .loader {
-            border-top-color: #3498db;
-            -webkit-animation: spinner 1.5s linear infinite;
-            animation: spinner 1.5s linear infinite;
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            scroll-behavior: smooth;
         }
         
-        @-webkit-keyframes spinner {
-            0% { -webkit-transform: rotate(0deg); }
-            100% { -webkit-transform: rotate(360deg); }
+        .hero-gradient {
+            background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%);
         }
         
-        @keyframes spinner {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+        }
+        
+        .feature-icon {
+            border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(90deg, #4F46E5 0%, #7C3AED 100%);
+            box-shadow: 0 4px 10px rgba(124, 58, 237, 0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(124, 58, 237, 0.4);
+        }
+        
+        .animate-blob {
+            animation: blob 7s infinite;
+        }
+        
+        .animate-float {
+            animation: float 6s ease-in-out infinite;
+        }
+        
+        .delay-2000 {
+            animation-delay: 2s;
+        }
+        
+        .delay-4000 {
+            animation-delay: 4s;
         }
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen">
-    <div class="container mx-auto px-4 py-8">
-        <header class="mb-10">
-            <h1 class="text-3xl font-bold text-center text-blue-600">Extraction de Texte d'Images à Faible Résolution</h1>
-            <p class="text-center text-gray-600 mt-2">Uploadez une image pour extraire le texte en utilisant des techniques de traitement d'images et OCR</p>
-        </header>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="bg-white py-4 shadow-sm">
+        <div class="container mx-auto px-4 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <i class="fas fa-eye text-indigo-600 text-2xl"></i>
+                <span class="text-2xl font-bold text-gray-800">OCR<span class="text-indigo-600">Vision</span></span>
+            </div>
+            <nav class="hidden md:flex space-x-8">
+                <a href="#features" class="text-gray-600 hover:text-indigo-600 transition">Fonctionnalités</a>
+                <a href="#how-it-works" class="text-gray-600 hover:text-indigo-600 transition">Comment ça marche</a>
+                <a href="#about" class="text-gray-600 hover:text-indigo-600 transition">À propos</a>
+            </nav>
+        </div>
+    </header>
 
-        <div class="bg-white rounded-lg shadow-lg p-6 mb-10">
-            <h2 class="text-xl font-semibold mb-4">Upload d'Image</h2>
-            <form id="upload-form" class="space-y-4">
-                <div class="flex items-center justify-center w-full">
-                    <label for="image-upload" class="flex flex-col items-center justify-center w-full h-32 border-2 border-blue-300 border-dashed rounded-lg cursor-pointer bg-blue-50 hover:bg-blue-100">
-                        <div class="flex flex-col items-center justify-center pt-5 pb-6">
-                            <svg class="w-8 h-8 mb-3 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
-                            </svg>
-                            <p class="mb-1 text-sm text-gray-500">Cliquez pour upload ou déposez une image</p>
-                            <p class="text-xs text-gray-500">Formats supportés: PNG, JPG, JPEG</p>
+    <!-- Hero Section -->
+    <section class="hero-gradient text-white py-20 relative overflow-hidden">
+        <!-- Decorative Elements -->
+        <div class="absolute top-0 -left-4 w-72 h-72 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
+        <div class="absolute top-0 -right-4 w-72 h-72 bg-yellow-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob delay-2000"></div>
+        <div class="absolute -bottom-8 left-20 w-72 h-72 bg-pink-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob delay-4000"></div>
+        
+        <div class="container mx-auto px-4 relative z-10">
+            <div class="flex flex-col md:flex-row items-center">
+                <div class="md:w-1/2 mb-10 md:mb-0">
+                    <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
+                        Extraction intelligente de texte à partir d'images
+                    </h1>
+                    <p class="text-xl opacity-90 mb-8 max-w-lg">
+                        OCRVision utilise des techniques avancées de traitement d'image et l'IA pour extraire du texte même à partir d'images à faible résolution.
+                    </p>
+                    <a href="/process" class="btn-primary text-white font-semibold py-4 px-8 rounded-full inline-flex items-center">
+                        <span class="mr-2">Commencer maintenant</span>
+                        <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+                <div class="md:w-1/2 flex justify-center">
+                    <div class="relative">
+                        <div class="w-64 h-64 bg-indigo-100 absolute top-4 -right-4 rounded-lg transform rotate-6"></div>
+                        <div class="w-64 h-64 bg-purple-100 absolute -top-4 -left-4 rounded-lg transform -rotate-6"></div>
+                        <div class="glass-card rounded-lg p-4 relative z-10 animate-float">
+                            <img src="https://images.unsplash.com/photo-1595500381751-d838bbf46553?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=400&h=400&q=80" alt="OCR example" class="rounded shadow-lg">
+                            <div class="absolute -bottom-4 -right-4 bg-white rounded-lg p-3 shadow-lg">
+                                <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                                <span class="text-sm font-medium">Texte extrait avec succès</span>
+                            </div>
                         </div>
-                        <input id="image-upload" type="file" accept=".jpg,.jpeg,.png" class="hidden" />
-                    </label>
+                    </div>
                 </div>
-                <div id="preview-container" class="hidden">
-                    <img id="image-preview" class="h-40 mx-auto object-contain" src="" alt="Aperçu de l'image"/>
-                    <button type="button" id="remove-image" class="mt-2 text-sm text-red-500 hover:text-red-700">
-                        Supprimer
-                    </button>
-                </div>
-                <div class="flex justify-center">
-                    <button type="submit" id="process-btn" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
-                        Traiter l'image
-                    </button>
-                </div>
-            </form>
+            </div>
         </div>
+    </section>
 
-        <div id="loader" class="hidden flex justify-center items-center my-10">
-            <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-12 w-12"></div>
-            <span class="ml-3">Traitement en cours...</span>
-        </div>
-
-        <div id="results" class="hidden bg-white rounded-lg shadow-lg p-6 mb-10">
-            <h2 class="text-xl font-semibold mb-4">Résultats</h2>
+    <!-- Features Section -->
+    <section id="features" class="py-20 bg-white">
+        <div class="container mx-auto px-4">
+            <h2 class="text-3xl font-bold text-center mb-12">Fonctionnalités principales</h2>
             
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div class="space-y-2">
-                    <h3 class="font-medium text-gray-700">Image Originale</h3>
-                    <div class="h-48 bg-gray-200 rounded flex items-center justify-center overflow-hidden">
-                        <img id="original-image" class="max-h-full max-w-full object-contain" src="" alt="Image originale"/>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Feature 1 -->
+                <div class="bg-gray-50 rounded-xl p-6 shadow-sm hover:shadow-md transition">
+                    <div class="feature-icon w-14 h-14 flex items-center justify-center bg-indigo-100 text-indigo-600 text-xl mb-5">
+                        <i class="fas fa-image"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-3">Traitement d'images avancé</h3>
+                    <p class="text-gray-600">
+                        Conversion en niveaux de gris, seuillage adaptatif, et débruitage pour optimiser la qualité de l'image avant extraction.
+                    </p>
+                </div>
+                
+                <!-- Feature 2 -->
+                <div class="bg-gray-50 rounded-xl p-6 shadow-sm hover:shadow-md transition">
+                    <div class="feature-icon w-14 h-14 flex items-center justify-center bg-purple-100 text-purple-600 text-xl mb-5">
+                        <i class="fas fa-font"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-3">OCR haute précision</h3>
+                    <p class="text-gray-600">
+                        Utilisation de Tesseract OCR pour une reconnaissance de texte fiable, même sur des documents de qualité médiocre.
+                    </p>
+                </div>
+                
+                <!-- Feature 3 -->
+                <div class="bg-gray-50 rounded-xl p-6 shadow-sm hover:shadow-md transition">
+                    <div class="feature-icon w-14 h-14 flex items-center justify-center bg-blue-100 text-blue-600 text-xl mb-5">
+                        <i class="fas fa-chart-bar"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-3">Analyse comparative</h3>
+                    <p class="text-gray-600">
+                        Visualisez la différence entre l'extraction directe et l'extraction avec prétraitement pour mesurer l'amélioration.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section id="how-it-works" class="py-20 bg-gray-50">
+        <div class="container mx-auto px-4">
+            <h2 class="text-3xl font-bold text-center mb-8">Comment ça marche</h2>
+            <p class="text-gray-600 text-center max-w-3xl mx-auto mb-12">
+                Notre application utilise des techniques avancées de traitement d'images et de vision par ordinateur pour optimiser la reconnaissance de texte dans des images de faible qualité.
+            </p>
+            
+            <!-- Advanced Steps with Details -->
+            <div class="flex flex-col space-y-8 mt-12">
+                <!-- Step 1 -->
+                <div class="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
+                    <div class="flex flex-col md:flex-row">
+                        <div class="bg-indigo-600 p-6 text-white md:w-1/4 flex flex-col justify-center items-center">
+                            <div class="w-16 h-16 rounded-full bg-white text-indigo-600 flex items-center justify-center text-2xl font-bold mb-4">1</div>
+                            <h3 class="text-xl font-semibold text-center">Acquisition d'image</h3>
+                        </div>
+                        <div class="p-6 md:w-3/4">
+                            <div class="mb-4">
+                                <h4 class="text-lg font-medium mb-2 text-gray-800">Téléchargement et analyse</h4>
+                                <p class="text-gray-600">L'utilisateur télécharge une image contenant du texte. Le système analyse les propriétés de l'image : résolution, profondeur de couleur, et rapport signal/bruit.</p>
+                            </div>
+                            <div class="flex flex-wrap gap-2">
+                                <span class="bg-indigo-50 text-indigo-700 text-xs px-2 py-1 rounded-full">Formats supportés: JPG, PNG</span>
+                                <span class="bg-indigo-50 text-indigo-700 text-xs px-2 py-1 rounded-full">Échantillonnage</span>
+                                <span class="bg-indigo-50 text-indigo-700 text-xs px-2 py-1 rounded-full">Quantification</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="space-y-2">
-                    <h3 class="font-medium text-gray-700">Image Dégradée</h3>
-                    <div class="h-48 bg-gray-200 rounded flex items-center justify-center overflow-hidden">
-                        <img id="degraded-image" class="max-h-full max-w-full object-contain" src="" alt="Image dégradée"/>
+
+                <!-- Step 2 -->
+                <div class="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
+                    <div class="flex flex-col md:flex-row">
+                        <div class="bg-indigo-600 p-6 text-white md:w-1/4 flex flex-col justify-center items-center">
+                            <div class="w-16 h-16 rounded-full bg-white text-indigo-600 flex items-center justify-center text-2xl font-bold mb-4">2</div>
+                            <h3 class="text-xl font-semibold text-center">Simulation de dégradation</h3>
+                        </div>
+                        <div class="p-6 md:w-3/4">
+                            <div class="mb-4">
+                                <h4 class="text-lg font-medium mb-2 text-gray-800">Reproduction de défauts courants</h4>
+                                <p class="text-gray-600">Pour tester la robustesse de notre algorithme, nous simulons une image à faible résolution en ajoutant du bruit gaussien, en réduisant la résolution et en appliquant un flou.</p>
+                            </div>
+                            <div class="flex flex-wrap gap-2">
+                                <span class="bg-amber-50 text-amber-700 text-xs px-2 py-1 rounded-full">Réduction de résolution</span>
+                                <span class="bg-amber-50 text-amber-700 text-xs px-2 py-1 rounded-full">Bruit gaussien</span>
+                                <span class="bg-amber-50 text-amber-700 text-xs px-2 py-1 rounded-full">Flou gaussien</span>
+                                <span class="bg-amber-50 text-amber-700 text-xs px-2 py-1 rounded-full">Compression JPEG</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="space-y-2">
-                    <h3 class="font-medium text-gray-700">Image Prétraitée</h3>
-                    <div class="h-48 bg-gray-200 rounded flex items-center justify-center overflow-hidden">
-                        <img id="preprocessed-image" class="max-h-full max-w-full object-contain" src="" alt="Image prétraitée"/>
+
+                <!-- Step 3 -->
+                <div class="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
+                    <div class="flex flex-col md:flex-row">
+                        <div class="bg-indigo-600 p-6 text-white md:w-1/4 flex flex-col justify-center items-center">
+                            <div class="w-16 h-16 rounded-full bg-white text-indigo-600 flex items-center justify-center text-2xl font-bold mb-4">3</div>
+                            <h3 class="text-xl font-semibold text-center">Prétraitement avancé</h3>
+                        </div>
+                        <div class="p-6 md:w-3/4">
+                            <div class="mb-4">
+                                <h4 class="text-lg font-medium mb-2 text-gray-800">Techniques de restauration d'image</h4>
+                                <p class="text-gray-600">Nous appliquons une série de techniques avancées pour améliorer la qualité de l'image et rendre le texte plus visible et lisible pour l'algorithme OCR.</p>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <h5 class="text-sm font-semibold mb-2 text-gray-700">Opérations ponctuelles</h5>
+                                    <div class="flex flex-wrap gap-2">
+                                        <span class="bg-blue-50 text-blue-700 text-xs px-2 py-1 rounded-full">Correction gamma</span>
+                                        <span class="bg-blue-50 text-blue-700 text-xs px-2 py-1 rounded-full">Égalisation d'histogramme</span>
+                                        <span class="bg-blue-50 text-blue-700 text-xs px-2 py-1 rounded-full">CLAHE</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h5 class="text-sm font-semibold mb-2 text-gray-700">Filtrage spatial</h5>
+                                    <div class="flex flex-wrap gap-2">
+                                        <span class="bg-green-50 text-green-700 text-xs px-2 py-1 rounded-full">Filtres gaussiens</span>
+                                        <span class="bg-green-50 text-green-700 text-xs px-2 py-1 rounded-full">Filtre médian</span>
+                                        <span class="bg-green-50 text-green-700 text-xs px-2 py-1 rounded-full">Convolution 2D</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h5 class="text-sm font-semibold mb-2 text-gray-700">Morphologie mathématique</h5>
+                                    <div class="flex flex-wrap gap-2">
+                                        <span class="bg-purple-50 text-purple-700 text-xs px-2 py-1 rounded-full">Dilatation</span>
+                                        <span class="bg-purple-50 text-purple-700 text-xs px-2 py-1 rounded-full">Érosion</span>
+                                        <span class="bg-purple-50 text-purple-700 text-xs px-2 py-1 rounded-full">Ouverture</span>
+                                        <span class="bg-purple-50 text-purple-700 text-xs px-2 py-1 rounded-full">Fermeture</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h5 class="text-sm font-semibold mb-2 text-gray-700">Détection de contours</h5>
+                                    <div class="flex flex-wrap gap-2">
+                                        <span class="bg-red-50 text-red-700 text-xs px-2 py-1 rounded-full">Sobel</span>
+                                        <span class="bg-red-50 text-red-700 text-xs px-2 py-1 rounded-full">Canny</span>
+                                        <span class="bg-red-50 text-red-700 text-xs px-2 py-1 rounded-full">Laplacien</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 4 -->
+                <div class="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
+                    <div class="flex flex-col md:flex-row">
+                        <div class="bg-indigo-600 p-6 text-white md:w-1/4 flex flex-col justify-center items-center">
+                            <div class="w-16 h-16 rounded-full bg-white text-indigo-600 flex items-center justify-center text-2xl font-bold mb-4">4</div>
+                            <h3 class="text-xl font-semibold text-center">Extraction OCR</h3>
+                        </div>
+                        <div class="p-6 md:w-3/4">
+                            <div class="mb-4">
+                                <h4 class="text-lg font-medium mb-2 text-gray-800">Reconnaissance de texte</h4>
+                                <p class="text-gray-600">Le moteur OCR Tesseract analyse l'image prétraitée pour identifier et extraire le texte. Notre application compare les résultats obtenus avant et après prétraitement pour démontrer l'efficacité des techniques appliquées.</p>
+                            </div>
+                            <div class="flex flex-wrap gap-2">
+                                <span class="bg-teal-50 text-teal-700 text-xs px-2 py-1 rounded-full">Segmentation d'image</span>
+                                <span class="bg-teal-50 text-teal-700 text-xs px-2 py-1 rounded-full">Seuillage adaptatif</span>
+                                <span class="bg-teal-50 text-teal-700 text-xs px-2 py-1 rounded-full">Analyse de caractères</span>
+                                <span class="bg-teal-50 text-teal-700 text-xs px-2 py-1 rounded-full">Reconnaissance par deep learning</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
             
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="space-y-2">
-                    <h3 class="font-medium text-gray-700">Texte extrait de l'image dégradée</h3>
-                    <div class="p-3 h-60 bg-gray-100 rounded overflow-auto">
-                        <pre id="degraded-text" class="text-sm whitespace-pre-wrap"></pre>
-                    </div>
-                </div>
-                <div class="space-y-2">
-                    <h3 class="font-medium text-gray-700">Texte extrait de l'image prétraitée</h3>
-                    <div class="p-3 h-60 bg-gray-100 rounded overflow-auto">
-                        <pre id="preprocessed-text" class="text-sm whitespace-pre-wrap"></pre>
-                    </div>
-                </div>
-            </div>
-
-            <div class="mt-6">
-                <button id="reset-btn" class="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50">
-                    Traiter une nouvelle image
-                </button>
+            <div class="text-center mt-12">
+                <a href="/process" class="btn-primary text-white font-semibold py-3 px-6 rounded-full inline-flex items-center">
+                    <span class="mr-2">Essayez maintenant</span>
+                    <i class="fas fa-play"></i>
+                </a>
             </div>
         </div>
-    </div>
+    </section>
 
-    <footer class="bg-gray-800 text-white py-4 mt-10">
-        <div class="container mx-auto px-4 text-center">
-            <p>© 2023 Application OCR pour Images à Faible Résolution</p>
+    <!-- About Section -->
+    <section id="about" class="py-20 bg-white">
+        <div class="container mx-auto px-4">
+            <h2 class="text-3xl font-bold text-center mb-12">À propos de cette application</h2>
+            
+            <div class="max-w-3xl mx-auto">
+                <p class="text-gray-600 mb-6">
+                    OCRVision est une application développée dans le cadre d'un projet universitaire de Computer Vision. Elle utilise des techniques avancées de traitement d'images et l'OCR (Reconnaissance Optique de Caractères) pour extraire du texte à partir d'images à faible résolution.
+                </p>
+                <p class="text-gray-600 mb-6">
+                    L'application a été implémentée avec Python (Flask) pour le backend, OpenCV pour le traitement d'images, Tesseract pour l'OCR, et Tailwind CSS pour l'interface utilisateur. Elle démontre l'efficacité des techniques de prétraitement pour améliorer la qualité de l'extraction de texte.
+                </p>
+                <div class="flex flex-wrap justify-center gap-4 mt-8">
+                    <div class="py-2 px-4 bg-gray-100 rounded-full text-gray-700">
+                        <i class="fab fa-python mr-1"></i> Python
+                    </div>
+                    <div class="py-2 px-4 bg-gray-100 rounded-full text-gray-700">
+                        <i class="fas fa-flask mr-1"></i> Flask
+                    </div>
+                    <div class="py-2 px-4 bg-gray-100 rounded-full text-gray-700">
+                        <i class="fas fa-camera mr-1"></i> OpenCV
+                    </div>
+                    <div class="py-2 px-4 bg-gray-100 rounded-full text-gray-700">
+                        <i class="fas fa-font mr-1"></i> Tesseract OCR
+                    </div>
+                    <div class="py-2 px-4 bg-gray-100 rounded-full text-gray-700">
+                        <i class="fab fa-css3 mr-1"></i> Tailwind CSS
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-8">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="mb-4 md:mb-0">
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-eye text-indigo-400 text-xl"></i>
+                        <span class="text-xl font-bold">OCR<span class="text-indigo-400">Vision</span></span>
+                    </div>
+                    <p class="text-gray-400 text-sm mt-2">© 2025 OCRVision Lab</p>
+                </div>
+                <div>
+                    <p class="text-gray-400 text-sm">Développé par LAALIJI & HNIOUA</p>
+                </div>
+            </div>
         </div>
     </footer>
-
-    <script src="/static/js/main.js"></script>
 </body>
 </html> 

@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OCR Vision Lab - Traitement</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/lottie-web@5.7.8/build/player/lottie.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    animation: {
+                        blob: "blob 7s infinite",
+                        float: "float 6s ease-in-out infinite",
+                    },
+                    keyframes: {
+                        blob: {
+                            "0%": {
+                                transform: "translate(0px, 0px) scale(1)",
+                            },
+                            "33%": {
+                                transform: "translate(30px, -50px) scale(1.1)",
+                            },
+                            "66%": {
+                                transform: "translate(-20px, 20px) scale(0.9)",
+                            },
+                            "100%": {
+                                transform: "translate(0px, 0px) scale(1)",
+                            },
+                        },
+                        float: {
+                            "0%, 100%": {
+                                transform: "translateY(0)",
+                            },
+                            "50%": {
+                                transform: "translateY(-20px)",
+                            },
+                        },
+                    },
+                },
+            },
+        };
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            scroll-behavior: smooth;
+        }
+        
+        .hero-gradient {
+            background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%);
+        }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+        }
+        
+        .feature-icon {
+            border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(90deg, #4F46E5 0%, #7C3AED 100%);
+            box-shadow: 0 4px 10px rgba(124, 58, 237, 0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(124, 58, 237, 0.4);
+        }
+        
+        .animate-blob {
+            animation: blob 7s infinite;
+        }
+        
+        .animate-float {
+            animation: float 6s ease-in-out infinite;
+        }
+        
+        .delay-2000 {
+            animation-delay: 2s;
+        }
+        
+        .delay-4000 {
+            animation-delay: 4s;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="bg-white py-4 shadow-sm">
+        <div class="container mx-auto px-4 flex justify-between items-center">
+            <a href="/" class="flex items-center space-x-2">
+                <i class="fas fa-eye text-indigo-600 text-2xl"></i>
+                <span class="text-2xl font-bold text-gray-800">OCR<span class="text-indigo-600">Vision</span></span>
+            </a>
+            <nav class="hidden md:flex space-x-8">
+                <a href="/#features" class="text-gray-600 hover:text-indigo-600 transition">Fonctionnalités</a>
+                <a href="/#how-it-works" class="text-gray-600 hover:text-indigo-600 transition">Comment ça marche</a>
+                <a href="/#about" class="text-gray-600 hover:text-indigo-600 transition">À propos</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8 max-w-6xl">
+        <div class="mb-10 text-center">
+            <h1 class="text-3xl font-bold text-gray-800 mb-4">Extraction OCR</h1>
+            <p class="text-gray-600 max-w-2xl mx-auto">
+                Téléchargez votre image, configurez les paramètres et obtenez un texte extrait de haute qualité grâce à notre traitement d'image avancé.
+            </p>
+        </div>
+
+        <!-- Horizontal Stepper -->
+        <div id="stepper" class="mb-12">
+            <!-- Progress Bar -->
+            <div class="relative mb-16">
+                <div class="w-full h-2 bg-gray-200 rounded-full">
+                    <div id="stepper-progress" class="h-full bg-indigo-500 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+
+                <!-- Step Indicators -->
+                <div class="absolute -top-2 left-0 right-0">
+                    <div class="flex justify-between">
+                        <!-- Step 1 -->
+                        <div class="relative w-24 text-center">
+                            <div class="w-6 h-6 mx-auto rounded-full bg-indigo-500 text-white flex items-center justify-center text-sm font-bold mb-2 relative z-10">1</div>
+                            <p class="text-xs font-medium text-gray-700 mt-2">Upload</p>
+                        </div>
+                        
+                        <!-- Step 2 -->
+                        <div class="relative w-24 text-center">
+                            <div class="w-6 h-6 mx-auto rounded-full bg-gray-300 text-white flex items-center justify-center text-sm font-bold mb-2 relative z-10">2</div>
+                            <p class="text-xs font-medium text-gray-500 mt-2">Analyse</p>
+                        </div>
+                        
+                        <!-- Step 3 -->
+                        <div class="relative w-24 text-center">
+                            <div class="w-6 h-6 mx-auto rounded-full bg-gray-300 text-white flex items-center justify-center text-sm font-bold mb-2 relative z-10">3</div>
+                            <p class="text-xs font-medium text-gray-500 mt-2">Traitement</p>
+                        </div>
+                        
+                        <!-- Step 4 -->
+                        <div class="relative w-24 text-center">
+                            <div class="w-6 h-6 mx-auto rounded-full bg-gray-300 text-white flex items-center justify-center text-sm font-bold mb-2 relative z-10">4</div>
+                            <p class="text-xs font-medium text-gray-500 mt-2">Extraction</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step Content -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                                <!-- Step 1: Upload -->                <div id="step1" class="active p-6">                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">                        <div>                            <h2 class="text-2xl font-bold mb-4 text-gray-800">Téléchargez votre image</h2>                            <p class="text-gray-600 mb-6">                                Sélectionnez une image contenant du texte à extraire. Pour de meilleurs résultats, utilisez une image claire avec un bon contraste.                            </p>                                                        <div class="my-8">                                <div id="upload-animation" class="w-40 h-40 mx-auto mb-4"></div>                            </div>                                                        <label class="block w-full">                                <input type="file" id="image-upload" accept=".jpg,.jpeg,.png" class="hidden">                                <div class="btn-primary text-white font-medium py-3 px-6 rounded-full inline-flex items-center justify-center w-full cursor-pointer">                                    <i class="fas fa-cloud-upload-alt mr-2"></i>                                    <span>Sélectionner une image</span>                                </div>                            </label>                        </div>                                                <div class="flex items-center justify-center">                            <div id="preview-container" class="w-full max-w-md bg-gray-50 rounded-xl border border-gray-200 p-4 hidden">                                <img id="image-preview" src="" alt="Image preview" class="w-full h-auto max-h-64 object-contain mb-4 rounded-lg">                                <div class="flex items-center justify-between">                                    <div>                                        <h3 id="image-name" class="font-medium text-gray-800 text-sm truncate"></h3>                                        <p id="image-size" class="text-gray-500 text-xs"></p>                                    </div>                                    <button id="remove-image" class="text-red-500 hover:text-red-700 transition">                                        <i class="fas fa-trash-alt"></i>                                    </button>                                </div>                            </div>                        </div>                    </div>                                        <div class="mt-8 flex justify-end">                        <button id="next-btn-1" disabled class="btn-primary text-white font-medium py-2 px-4 rounded-full inline-flex items-center opacity-70 cursor-not-allowed disabled:opacity-70 disabled:cursor-not-allowed">                            <span>Continuer</span>                            <i class="fas fa-arrow-right ml-2"></i>                        </button>                    </div>                </div>                                <!-- Step 2: Degradation -->                <div id="step2" class="hidden p-6">                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">                        <div>                            <h2 class="text-2xl font-bold mb-4 text-gray-800">Simulation d'image à basse résolution</h2>                            <p class="text-gray-600 mb-6">                                Pour démontrer l'efficacité de notre traitement OCR, nous simulons une image à faible résolution avec du bruit ajouté.                            </p>                                                        <div class="my-8">                                <div id="degradation-animation" class="w-40 h-40 mx-auto mb-4"></div>                            </div>                                                        <div class="bg-amber-50 border border-amber-200 rounded-lg p-4">                                <h3 class="text-amber-800 font-medium mb-2 flex items-center">                                    <i class="fas fa-info-circle mr-2"></i> Comment fonctionne la dégradation ?                                </h3>                                <p class="text-amber-700 text-sm">                                    Nous réduisons la résolution, ajoutons du bruit gaussien et appliquons un flou pour simuler les problèmes courants des images de mauvaise qualité.                                </p>                            </div>                        </div>                                                <div class="flex flex-col space-y-4">                            <div class="bg-gray-50 rounded-xl border border-gray-200 p-4">                                <h3 class="text-sm font-medium text-gray-700 mb-2">Image originale</h3>                                <img id="step2-original" src="" alt="Original image" class="w-full h-auto object-contain rounded-lg max-h-48">                            </div>                                                        <div class="bg-gray-50 rounded-xl border border-gray-200 p-4">                                <h3 class="text-sm font-medium text-gray-700 mb-2">Image dégradée</h3>                                <div id="step2-degraded-placeholder" class="w-full h-40 flex items-center justify-center bg-gray-100 rounded-lg">                                    <div class="flex flex-col items-center">                                        <div class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-500 mb-2"></div>                                        <p class="text-gray-400 text-sm">Dégradation en cours...</p>                                    </div>                                </div>                                <img id="step2-degraded" src="" alt="Degraded image" class="w-full h-auto object-contain rounded-lg max-h-48 hidden">                            </div>                        </div>                    </div>                                        <div class="mt-8 flex justify-between">                        <button id="prev-btn-2" class="border border-gray-300 bg-white text-gray-700 font-medium py-2 px-4 rounded-full inline-flex items-center hover:bg-gray-50">                            <i class="fas fa-arrow-left mr-2"></i>                            <span>Retour</span>                        </button>                        <button id="next-btn-2" disabled class="btn-primary text-white font-medium py-2 px-4 rounded-full inline-flex items-center disabled:opacity-70 disabled:cursor-not-allowed">                            <span>Continuer</span>                            <i class="fas fa-arrow-right ml-2"></i>                        </button>                    </div>                </div>                                <!-- Step 3: Preprocessing -->                <div id="step3" class="hidden p-6">                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">                        <div>                            <h2 class="text-2xl font-bold mb-4 text-gray-800">Prétraitement de l'image</h2>                            <p class="text-gray-600 mb-6">                                Nous appliquons des techniques avancées de traitement d'image pour améliorer la visibilité du texte.                            </p>                                                        <div class="my-8">                                <div id="preprocessing-animation" class="w-40 h-40 mx-auto mb-4"></div>                            </div>                                                        <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-4 mb-4">                                <h3 class="text-indigo-800 font-medium mb-2 flex items-center">                                    <i class="fas fa-magic mr-2"></i> Guide d'utilisation                                </h3>                                
+                                <!-- Guide étape par étape avec visualisation des phases -->
+                                <div class="space-y-4 mt-4">
+                                    <!-- Phase 1 -->
+                                    <div class="bg-white rounded-lg p-3 shadow-sm">
+                                        <h4 class="text-indigo-700 font-medium text-sm flex items-center">
+                                            <span class="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs mr-2">1</span>
+                                            Analyse de l'image
+                                        </h4>
+                                        <p class="text-gray-600 text-xs mt-1">L'application examine l'image pour identifier le type de problème: contraste faible, bruit, etc.</p>
+                                    </div>
+                                    
+                                    <!-- Phase 2 -->
+                                    <div class="bg-white rounded-lg p-3 shadow-sm">
+                                        <h4 class="text-indigo-700 font-medium text-sm flex items-center">
+                                            <span class="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs mr-2">2</span>
+                                            Amélioration du contraste
+                                        </h4>
+                                        <p class="text-gray-600 text-xs mt-1">Ajustement automatique de la luminosité et du contraste pour faire ressortir le texte.</p>
+                                    </div>
+                                    
+                                    <!-- Phase 3 -->
+                                    <div class="bg-white rounded-lg p-3 shadow-sm">
+                                        <h4 class="text-indigo-700 font-medium text-sm flex items-center">
+                                            <span class="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs mr-2">3</span>
+                                            Réduction du bruit
+                                        </h4>
+                                        <p class="text-gray-600 text-xs mt-1">Élimination des parasites tout en préservant les contours des caractères.</p>
+                                    </div>
+                                    
+                                    <!-- Phase 4 -->
+                                    <div class="bg-white rounded-lg p-3 shadow-sm">
+                                        <h4 class="text-indigo-700 font-medium text-sm flex items-center">
+                                            <span class="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs mr-2">4</span>
+                                            Binarisation adaptative
+                                        </h4>
+                                        <p class="text-gray-600 text-xs mt-1">Conversion en noir et blanc optimisée pour séparer le texte du fond.</p>
+                                    </div>
+                                    
+                                    <!-- Phase 5 -->
+                                    <div class="bg-white rounded-lg p-3 shadow-sm">
+                                        <h4 class="text-indigo-700 font-medium text-sm flex items-center">
+                                            <span class="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs mr-2">5</span>
+                                            Affinage des caractères
+                                        </h4>
+                                        <p class="text-gray-600 text-xs mt-1">Renforcement des contours et connexion des composantes des lettres pour faciliter la reconnaissance.</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="flex items-center mt-4 bg-blue-50 p-2 rounded-lg">
+                                    <i class="fas fa-lightbulb text-yellow-500 mr-2"></i>
+                                    <p class="text-blue-700 text-xs">
+                                        Le traitement est entièrement automatique. Vous verrez l'image transformée à chaque étape!
+                                    </p>
+                                </div>
+                            </div>                        </div>                                                <div class="flex flex-col space-y-4">                            <div class="bg-gray-50 rounded-xl border border-gray-200 p-4">                                <h3 class="text-sm font-medium text-gray-700 mb-2">Image dégradée</h3>                                <img id="step3-degraded" src="" alt="Degraded image" class="w-full h-auto object-contain rounded-lg max-h-40">                            </div>                                                        <div class="bg-gray-50 rounded-xl border border-gray-200 p-4">                                <h3 class="text-sm font-medium text-gray-700 mb-2">Image prétraitée</h3>                                <div id="step3-preprocessed-placeholder" class="w-full h-40 flex items-center justify-center bg-gray-100 rounded-lg">                                    <div class="flex flex-col items-center">                                        <div class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-500 mb-2"></div>                                        <p class="text-gray-400 text-sm">Prétraitement en cours...</p>                                    </div>                                </div>                                <img id="step3-preprocessed" src="" alt="Preprocessed image" class="w-full h-auto object-contain rounded-lg max-h-40 hidden">                            </div>                            <div class="bg-gray-50 rounded-xl border border-gray-200 p-4">                                <h3 class="text-sm font-medium text-gray-700 mb-2">Impact du prétraitement</h3>                                <p class="text-gray-600 text-sm">Le prétraitement transforme l'image pour amplifier le contraste entre le texte et le fond, corrige les imperfections, et optimise la reconnaissance des caractères par l'OCR.</p>                            </div>                        </div>                    </div>                                        <div class="mt-8 flex justify-between">                        <button id="prev-btn-3" class="border border-gray-300 bg-white text-gray-700 font-medium py-2 px-4 rounded-full inline-flex items-center hover:bg-gray-50">                            <i class="fas fa-arrow-left mr-2"></i>                            <span>Retour</span>                        </button>                        <button id="next-btn-3" disabled class="btn-primary text-white font-medium py-2 px-4 rounded-full inline-flex items-center disabled:opacity-70 disabled:cursor-not-allowed">                            <span>Continuer</span>                            <i class="fas fa-arrow-right ml-2"></i>                        </button>                    </div>                </div>                                <!-- Step 4: OCR Results -->                <div id="step4" class="hidden p-6">                    <div>                        <h2 class="text-2xl font-bold mb-4 text-gray-800">Résultats d'extraction OCR</h2>                        <p class="text-gray-600 mb-8">                            Comparez les résultats d'extraction de texte entre l'image dégradée et l'image prétraitée.                        </p>                    </div>                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">                        <div class="flex flex-col h-full">                            <h3 class="text-lg font-medium text-gray-800 mb-3">Image dégradée</h3>                            <div class="bg-gray-50 rounded-xl border border-gray-200 p-4 flex-grow mb-4">                                <div id="degraded-text-placeholder" class="w-full h-40 flex items-center justify-center">                                    <div class="flex flex-col items-center">                                        <div class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-500 mb-2"></div>                                        <p class="text-gray-400 text-sm">Extraction en cours...</p>                                    </div>                                </div>                                <pre id="degraded-text" class="whitespace-pre-wrap text-gray-700 text-sm font-mono bg-gray-50 p-2 rounded-md overflow-auto max-h-64 hidden"></pre>                            </div>                            <button id="copy-degraded" class="border border-gray-300 bg-white text-gray-700 font-medium py-2 px-4 rounded-lg inline-flex items-center justify-center hover:bg-gray-50 w-full">                                <i class="far fa-copy mr-2"></i>                                <span>Copier le texte</span>                            </button>                        </div>                                                <div class="flex flex-col h-full">                            <h3 class="text-lg font-medium text-indigo-800 mb-3">Image prétraitée</h3>                            <div class="bg-indigo-50 rounded-xl border border-indigo-200 p-4 flex-grow mb-4">                                <div id="preprocessed-text-placeholder" class="w-full h-40 flex items-center justify-center">                                    <div class="flex flex-col items-center">                                        <div class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-500 mb-2"></div>                                        <p class="text-indigo-400 text-sm">Extraction en cours...</p>                                    </div>                                </div>                                <pre id="preprocessed-text" class="whitespace-pre-wrap text-indigo-700 text-sm font-mono bg-indigo-50 p-2 rounded-md overflow-auto max-h-64 hidden"></pre>                            </div>                            <button id="copy-preprocessed" class="border border-indigo-300 bg-indigo-50 text-indigo-700 font-medium py-2 px-4 rounded-lg inline-flex items-center justify-center hover:bg-indigo-100 w-full">                                <i class="far fa-copy mr-2"></i>                                <span>Copier le texte</span>                            </button>                        </div>                    </div>                                        <div class="mt-12 flex flex-col md:flex-row justify-between items-center gap-4">                        <div class="flex items-center w-full md:w-auto">                            <button id="prev-btn-4" class="border border-gray-300 bg-white text-gray-700 font-medium py-2 px-4 rounded-full inline-flex items-center hover:bg-gray-50">                                <i class="fas fa-arrow-left mr-2"></i>                                <span>Retour</span>                            </button>                        </div>                        <div id="ocr-animation" class="w-20 h-20 hidden md:block"></div>                        <button id="results-btn" class="btn-primary text-white font-medium py-2 px-6 rounded-full inline-flex items-center w-full md:w-auto justify-center">                            <span>Voir les résultats complets</span>                            <i class="fas fa-chart-line ml-2"></i>                        </button>                    </div>                </div>
+            </div>
+        </div>
+        
+        <!-- Results Section (Initially Hidden) -->        <div id="final-results" class="hidden">            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden p-6">                <div class="mb-8">                    <h2 class="text-3xl font-bold text-gray-800 mb-4">Résultats d'analyse OCR</h2>                    <p class="text-gray-600">                        Voici un récapitulatif complet des résultats de l'analyse OCR effectuée sur votre image.                    </p>                </div>                                <!-- Images Comparison -->                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">                    <div class="bg-gray-50 rounded-xl border border-gray-200 p-4">                        <h3 class="text-sm font-medium text-gray-700 mb-2">Image originale</h3>                        <img id="original-image" src="" alt="Original image" class="w-full h-auto object-contain rounded-lg">                    </div>                    <div class="bg-gray-50 rounded-xl border border-gray-200 p-4">                        <h3 class="text-sm font-medium text-gray-700 mb-2">Image dégradée</h3>                        <img id="degraded-image" src="" alt="Degraded image" class="w-full h-auto object-contain rounded-lg">                    </div>                    <div class="bg-indigo-50 rounded-xl border border-indigo-200 p-4">                        <h3 class="text-sm font-medium text-indigo-700 mb-2">Image prétraitée</h3>                        <img id="preprocessed-image" src="" alt="Preprocessed image" class="w-full h-auto object-contain rounded-lg">                    </div>                </div>                                <!-- Analysis Results -->                <div class="bg-gray-50 rounded-xl p-6 mb-10">                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Analyse comparative</h3>                    <div class="flex items-center justify-center p-4 bg-white rounded-lg shadow-sm border border-gray-100">                        <div id="improvement-text" class="text-lg text-indigo-700 font-medium"></div>                    </div>                </div>                                <!-- Text Results -->                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">                    <div>                        <h3 class="text-lg font-semibold text-gray-800 mb-3">Texte extrait (Image dégradée)</h3>                        <div class="relative">                            <pre id="final-degraded-text" class="whitespace-pre-wrap text-gray-700 text-sm font-mono bg-gray-50 p-4 rounded-lg overflow-auto h-64 border border-gray-200"></pre>                            <button id="copy-degraded-final" class="absolute top-2 right-2 bg-white text-gray-500 hover:text-gray-700 p-2 rounded-full shadow-sm">                                <i class="far fa-copy"></i>                            </button>                        </div>                    </div>                    <div>                        <h3 class="text-lg font-semibold text-indigo-800 mb-3">Texte extrait (Image prétraitée)</h3>                        <div class="relative">                            <pre id="final-preprocessed-text" class="whitespace-pre-wrap text-indigo-700 text-sm font-mono bg-indigo-50 p-4 rounded-lg overflow-auto h-64 border border-indigo-200"></pre>                            <button id="copy-preprocessed-final" class="absolute top-2 right-2 bg-white text-indigo-500 hover:text-indigo-700 p-2 rounded-full shadow-sm">                                <i class="far fa-copy"></i>                            </button>                        </div>                    </div>                </div>                                <div class="flex flex-col md:flex-row justify-between items-center gap-4">                    <button id="reset-btn" class="border border-gray-300 bg-white text-gray-700 font-medium py-3 px-6 rounded-full inline-flex items-center hover:bg-gray-50">                        <i class="fas fa-redo mr-2"></i>                        <span>Recommencer</span>                    </button>                                        <button id="download-btn" class="btn-primary text-white font-medium py-3 px-6 rounded-full inline-flex items-center">                        <i class="fas fa-download mr-2"></i>                        <span>Télécharger les résultats</span>                    </button>                </div>            </div>        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-8 mt-20">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="mb-4 md:mb-0">
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-eye text-indigo-400 text-xl"></i>
+                        <span class="text-xl font-bold">OCR<span class="text-indigo-400">Vision</span></span>
+                    </div>
+                    <p class="text-gray-400 text-sm mt-2">© 2025 OCRVision Lab</p>
+                </div>
+                <div>
+                    <p class="text-gray-400 text-sm">Développé avec Python, Flask, OpenCV et Tesseract OCR</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="/static/js/main.js"></script>
+</body>
+</html> 
