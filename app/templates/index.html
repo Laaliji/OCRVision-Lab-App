@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Application OCR pour Images à Faible Résolution</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .loader {
+            border-top-color: #3498db;
+            -webkit-animation: spinner 1.5s linear infinite;
+            animation: spinner 1.5s linear infinite;
+        }
+        
+        @-webkit-keyframes spinner {
+            0% { -webkit-transform: rotate(0deg); }
+            100% { -webkit-transform: rotate(360deg); }
+        }
+        
+        @keyframes spinner {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <header class="mb-10">
+            <h1 class="text-3xl font-bold text-center text-blue-600">Extraction de Texte d'Images à Faible Résolution</h1>
+            <p class="text-center text-gray-600 mt-2">Uploadez une image pour extraire le texte en utilisant des techniques de traitement d'images et OCR</p>
+        </header>
+
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-10">
+            <h2 class="text-xl font-semibold mb-4">Upload d'Image</h2>
+            <form id="upload-form" class="space-y-4">
+                <div class="flex items-center justify-center w-full">
+                    <label for="image-upload" class="flex flex-col items-center justify-center w-full h-32 border-2 border-blue-300 border-dashed rounded-lg cursor-pointer bg-blue-50 hover:bg-blue-100">
+                        <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                            <svg class="w-8 h-8 mb-3 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                            </svg>
+                            <p class="mb-1 text-sm text-gray-500">Cliquez pour upload ou déposez une image</p>
+                            <p class="text-xs text-gray-500">Formats supportés: PNG, JPG, JPEG</p>
+                        </div>
+                        <input id="image-upload" type="file" accept=".jpg,.jpeg,.png" class="hidden" />
+                    </label>
+                </div>
+                <div id="preview-container" class="hidden">
+                    <img id="image-preview" class="h-40 mx-auto object-contain" src="" alt="Aperçu de l'image"/>
+                    <button type="button" id="remove-image" class="mt-2 text-sm text-red-500 hover:text-red-700">
+                        Supprimer
+                    </button>
+                </div>
+                <div class="flex justify-center">
+                    <button type="submit" id="process-btn" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                        Traiter l'image
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div id="loader" class="hidden flex justify-center items-center my-10">
+            <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-12 w-12"></div>
+            <span class="ml-3">Traitement en cours...</span>
+        </div>
+
+        <div id="results" class="hidden bg-white rounded-lg shadow-lg p-6 mb-10">
+            <h2 class="text-xl font-semibold mb-4">Résultats</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="space-y-2">
+                    <h3 class="font-medium text-gray-700">Image Originale</h3>
+                    <div class="h-48 bg-gray-200 rounded flex items-center justify-center overflow-hidden">
+                        <img id="original-image" class="max-h-full max-w-full object-contain" src="" alt="Image originale"/>
+                    </div>
+                </div>
+                <div class="space-y-2">
+                    <h3 class="font-medium text-gray-700">Image Dégradée</h3>
+                    <div class="h-48 bg-gray-200 rounded flex items-center justify-center overflow-hidden">
+                        <img id="degraded-image" class="max-h-full max-w-full object-contain" src="" alt="Image dégradée"/>
+                    </div>
+                </div>
+                <div class="space-y-2">
+                    <h3 class="font-medium text-gray-700">Image Prétraitée</h3>
+                    <div class="h-48 bg-gray-200 rounded flex items-center justify-center overflow-hidden">
+                        <img id="preprocessed-image" class="max-h-full max-w-full object-contain" src="" alt="Image prétraitée"/>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="space-y-2">
+                    <h3 class="font-medium text-gray-700">Texte extrait de l'image dégradée</h3>
+                    <div class="p-3 h-60 bg-gray-100 rounded overflow-auto">
+                        <pre id="degraded-text" class="text-sm whitespace-pre-wrap"></pre>
+                    </div>
+                </div>
+                <div class="space-y-2">
+                    <h3 class="font-medium text-gray-700">Texte extrait de l'image prétraitée</h3>
+                    <div class="p-3 h-60 bg-gray-100 rounded overflow-auto">
+                        <pre id="preprocessed-text" class="text-sm whitespace-pre-wrap"></pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-6">
+                <button id="reset-btn" class="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50">
+                    Traiter une nouvelle image
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-gray-800 text-white py-4 mt-10">
+        <div class="container mx-auto px-4 text-center">
+            <p>© 2023 Application OCR pour Images à Faible Résolution</p>
+        </div>
+    </footer>
+
+    <script src="/static/js/main.js"></script>
+</body>
+</html> 
