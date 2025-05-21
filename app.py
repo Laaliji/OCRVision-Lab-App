@@ -5,7 +5,10 @@ import pytesseract
 import base64
 from PIL import Image
 from io import BytesIO
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, url_for, flash, redirect
+from werkzeug.utils import secure_filename
+from flask_cors import CORS
+import uuid
 
 # Chemin vers l'exécutable Tesseract (vérifiez le chemin réel après installation)
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
@@ -15,11 +18,17 @@ pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tessera
 app = Flask(__name__, 
             template_folder='app/templates',
             static_folder='app/static')
+CORS(app)  # Activer CORS pour toutes les routes
+app.secret_key = 'ocr_vision_secret_key'
 
 # Configuration
-UPLOAD_FOLDER = 'app/static/uploads'
-PROCESSED_FOLDER = 'app/static/processed'
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
+UPLOAD_FOLDER = os.path.join('app', 'static', 'uploads')
+PROCESSED_FOLDER = os.path.join('app', 'static', 'processed')
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'tif', 'tiff', 'bmp'}
+
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['PROCESSED_FOLDER'] = PROCESSED_FOLDER
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(PROCESSED_FOLDER, exist_ok=True)
@@ -149,51 +158,82 @@ def process():
     return render_template('process.html')
 
 @app.route('/process_image', methods=['POST'])
-def process_image():
+def process_image_api():
+    """
+    API endpoint to process an image and return OCR results
+    """
     if 'image' not in request.files:
-        return jsonify({'error': 'No image provided'}), 400
+        return jsonify({'success': False, 'error': 'No image provided'}), 400
     
     file = request.files['image']
     
     if file.filename == '':
-        return jsonify({'error': 'No image selected'}), 400
+        return jsonify({'success': False, 'error': 'No image selected'}), 400
     
     if file and allowed_file(file.filename):
-        # Save original image
-        original_path = os.path.join(UPLOAD_FOLDER, 'original.jpg')
-        file.save(original_path)
+        # Secure filename and save
+        filename = secure_filename(file.filename)
+        # Add a unique identifier to avoid collisions
+        unique_filename = f"{uuid.uuid4().hex}_{filename}"
         
-        # Read the image with OpenCV
-        original_img = cv2.imread(original_path)
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+        file.save(file_path)
         
-        # Degrade the image
-        degraded_img = degrade_image(original_img)
-        degraded_path = os.path.join(PROCESSED_FOLDER, 'degraded.jpg')
-        cv2.imwrite(degraded_path, degraded_img)
-        
-        # Preprocess the degraded image
-        preprocessed_img = preprocess_image(degraded_img)
-        preprocessed_path = os.path.join(PROCESSED_FOLDER, 'preprocessed.jpg')
-        cv2.imwrite(preprocessed_path, preprocessed_img)
-        
-        # Extract text from both degraded and preprocessed images
-        degraded_text = extract_text(degraded_img)
-        preprocessed_text = extract_text(preprocessed_img)
-        
-        # Convert images to base64 for frontend display
-        original_base64 = image_to_base64(original_img)
-        degraded_base64 = image_to_base64(degraded_img)
-        preprocessed_base64 = image_to_base64(preprocessed_img)
-        
-        return jsonify({
-            'original_image': original_base64,
-            'degraded_image': degraded_base64,
-            'preprocessed_image': preprocessed_base64,
-            'degraded_text': degraded_text,
-            'preprocessed_text': preprocessed_text
-        })
+        # Process the image
+        try:
+            # Read image
+            image = cv2.imread(file_path)
+            
+            # Get degraded image and text
+            degraded = degrade_image(image)
+            degraded_path = os.path.join(app.config['PROCESSED_FOLDER'], f"degraded_{unique_filename}")
+            cv2.imwrite(degraded_path, degraded)
+            degraded_text = extract_text(degraded)
+            
+            # Preprocess and extract text with advanced techniques
+            preprocessed = preprocess_image(image)
+            preprocessed_path = os.path.join(app.config['PROCESSED_FOLDER'], f"preprocessed_{unique_filename}")
+            cv2.imwrite(preprocessed_path, preprocessed)
+            preprocessed_text = extract_text(preprocessed)
+            
+            # Calculate improvement (simple metric based on char count)
+            degraded_count = len(degraded_text.strip())
+            preprocessed_count = len(preprocessed_text.strip())
+            
+            if degraded_count == 0 and preprocessed_count == 0:
+                comparison = "Aucun texte n'a pu être extrait des deux images."
+            elif degraded_count == 0:
+                comparison = "Le prétraitement a permis d'extraire du texte là où l'extraction directe a échoué."
+            else:
+                improvement = ((preprocessed_count - degraded_count) / degraded_count) * 100
+                comparison = f"Le prétraitement a amélioré l'extraction de texte de {improvement:.1f}%."
+            
+            # Paths for frontend
+            base_url = request.url_root
+            
+            return jsonify({
+                'success': True,
+                'original_image': f"{base_url}static/uploads/{unique_filename}",
+                'degraded_image': f"{base_url}static/processed/degraded_{unique_filename}",
+                'preprocessed_image': f"{base_url}static/processed/preprocessed_{unique_filename}",
+                'degraded_text': degraded_text,
+                'preprocessed_text': preprocessed_text,
+                'comparison': comparison
+            })
+            
+        except Exception as e:
+            return jsonify({'success': False, 'error': str(e)}), 500
     
-    return jsonify({'error': 'Invalid file type'}), 400
+    return jsonify({'success': False, 'error': 'File type not allowed'}), 400
+
+@app.route('/info', methods=['GET'])
+def get_app_info():
+    """API endpoint to return app information"""
+    return jsonify({
+        'version': '1.0.0',
+        'name': 'OCR Vision API',
+        'description': 'API for advanced OCR processing with image preprocessing techniques',
+    })
 
 if __name__ == '__main__':
     app.run(debug=True, port=8080) 
