@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowRight, faArrowLeft, faChartLine, faCheckCircle, faExclamationTriangle, faSync, faInfo, faCheck, faImage } from '@fortawesome/free-solid-svg-icons';
+import { faArrowRight, faArrowLeft, faChartLine, faCheckCircle, faExclamationTriangle, faSync, faInfo, faCheck, faImage, faInfoCircle, faPlay, faPause, faStepForward, faUndo, faArrowDown } from '@fortawesome/free-solid-svg-icons';
 import { ClipLoader } from 'react-spinners';
 import ProcessStepper from './ProcessStepper';
 import ImageUploader from './ImageUploader';
@@ -11,6 +11,7 @@ import { ProcessStep, OCRResult, ImageTransformation } from '../../types/types';
 import ImageValidator, { ImageCharacteristics } from './ImageValidator';
 import ImageProcessor from './ImageProcessor';
 import { useLanguage } from '../../contexts/LanguageContext';
+import ResultActions from './ResultActions';
 
 const Process: React.FC = () => {
   const { t } = useLanguage();
@@ -40,6 +41,9 @@ const Process: React.FC = () => {
     { name: 'Brightness', description: 'Brightness is adjusted to simulate different lighting', id: 'brightness' },
     { name: 'Blur', description: 'Gaussian blur simulates out of focus or low resolution', id: 'blur' }
   ];
+  
+  // New state for segmentation
+  const [segmentationStep, setSegmentationStep] = useState<number>(0);
   
   // Set original image URL when a file is selected
   useEffect(() => {
@@ -235,78 +239,6 @@ const Process: React.FC = () => {
     }
   }, [error]);
   
-  const renderTransformationInfo = () => {
-    return (
-      <div className="mt-8">
-        <h3 className="text-lg font-semibold mb-4">{t('transform.techniques.title')}</h3>
-        <p className="text-sm text-gray-600 mb-4">
-          {t('transform.techniques.description')}
-        </p>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="p-4 border rounded-lg bg-indigo-50 border-indigo-200">
-            <div className="flex items-center">
-              <div className="w-5 h-5 rounded-full bg-indigo-500 text-white flex items-center justify-center mr-3">
-                <FontAwesomeIcon icon={faCheck} className="text-xs" />
-              </div>
-              <div className="flex-grow">
-                <h4 className="font-medium">{t('transform.gaussian.title')}</h4>
-                <p className="text-xs text-gray-500">{t('transform.gaussian.desc')}</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="p-4 border rounded-lg bg-indigo-50 border-indigo-200">
-            <div className="flex items-center">
-              <div className="w-5 h-5 rounded-full bg-indigo-500 text-white flex items-center justify-center mr-3">
-                <FontAwesomeIcon icon={faCheck} className="text-xs" />
-              </div>
-              <div className="flex-grow">
-                <h4 className="font-medium">{t('transform.saltpepper.title')}</h4>
-                <p className="text-xs text-gray-500">{t('transform.saltpepper.desc')}</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="p-4 border rounded-lg bg-indigo-50 border-indigo-200">
-            <div className="flex items-center">
-              <div className="w-5 h-5 rounded-full bg-indigo-500 text-white flex items-center justify-center mr-3">
-                <FontAwesomeIcon icon={faCheck} className="text-xs" />
-              </div>
-              <div className="flex-grow">
-                <h4 className="font-medium">{t('transform.brightness.title')}</h4>
-                <p className="text-xs text-gray-500">{t('transform.brightness.desc')}</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="p-4 border rounded-lg bg-indigo-50 border-indigo-200">
-            <div className="flex items-center">
-              <div className="w-5 h-5 rounded-full bg-indigo-500 text-white flex items-center justify-center mr-3">
-                <FontAwesomeIcon icon={faCheck} className="text-xs" />
-              </div>
-              <div className="flex-grow">
-                <h4 className="font-medium">{t('transform.blur.title')}</h4>
-                <p className="text-xs text-gray-500">{t('transform.blur.desc')}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <div className="mt-6 bg-green-50 border-l-4 border-green-400 p-4 rounded">
-          <div className="flex">
-            <FontAwesomeIcon icon={faInfo} className="text-green-400 mr-3 mt-0.5" />
-            <div>
-              <p className="text-sm text-green-700">
-                <strong>{t('transform.insight.title')}</strong> {t('transform.insight.desc')}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   const renderStepContent = () => {
     switch (currentStep) {
       case 1:
@@ -359,20 +291,35 @@ const Process: React.FC = () => {
         return (
           <div className="text-center mb-8 p-6">
             <h2 className="text-2xl font-bold mb-6">{t('validation.title')}</h2>
-            <div className="max-w-xl mx-auto mb-6 bg-indigo-50 border-l-4 border-indigo-500 p-4 rounded text-left">
-              <div className="flex">
-                <FontAwesomeIcon icon={faImage} className="text-indigo-500 mr-3 mt-0.5" />
-                <div>
-                  <p className="text-sm text-indigo-700">
-                    <strong>{t('validation.about')}</strong> {t('validation.aboutDesc')}
-                  </p>
-                  <ul className="list-disc pl-5 text-sm text-indigo-700 mt-1">
-                    <li>{t('validation.req1')}</li>
-                    <li>{t('validation.req2')}</li>
-                    <li>{t('validation.req3')}</li>
-                    <li>{t('validation.req4')}</li>
-                  </ul>
-                  <p className="text-sm text-indigo-700 mt-1">
+            
+            {/* Information tooltip */}
+            <div className="relative mb-6 inline-block group">
+              <button className="px-3 py-1 bg-indigo-50 text-indigo-700 rounded-full text-sm font-medium flex items-center">
+                <FontAwesomeIcon icon={faInfoCircle} className="mr-2" />
+                {t('validation.about')}
+              </button>
+              <div className="absolute z-10 hidden group-hover:block left-0 right-0 md:left-1/2 md:-translate-x-1/2 w-80 md:w-96 p-4 mt-2 bg-white rounded-lg shadow-lg border border-gray-200">
+                <div className="text-left">
+                  <p className="text-sm text-gray-600 mb-2">{t('validation.aboutDesc')}</p>
+                  <div className="grid grid-cols-2 gap-2 mt-3">
+                    <div className="text-xs bg-gray-50 p-2 rounded">
+                      <span className="text-indigo-600 font-medium block">1.</span> 
+                      {t('validation.req1')}
+                    </div>
+                    <div className="text-xs bg-gray-50 p-2 rounded">
+                      <span className="text-indigo-600 font-medium block">2.</span> 
+                      {t('validation.req2')}
+                    </div>
+                    <div className="text-xs bg-gray-50 p-2 rounded">
+                      <span className="text-indigo-600 font-medium block">3.</span> 
+                      {t('validation.req3')}
+                    </div>
+                    <div className="text-xs bg-gray-50 p-2 rounded">
+                      <span className="text-indigo-600 font-medium block">4.</span> 
+                      {t('validation.req4')}
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-3 italic">
                     {t('validation.processDesc')}
                   </p>
                 </div>
@@ -427,7 +374,60 @@ const Process: React.FC = () => {
               {t('transform.desc')}
             </p>
             
-            {renderTransformationInfo()}
+            <div className="flex flex-wrap gap-4 justify-center">
+              <div className="w-36 h-36 bg-white rounded-xl shadow-sm border border-indigo-100 p-3 flex flex-col items-center justify-center relative group cursor-help">
+                <div className="absolute inset-0 bg-indigo-500 opacity-0 group-hover:opacity-90 rounded-xl transition-opacity duration-300 flex items-center justify-center p-3">
+                  <p className="text-white text-xs text-center">{t('transform.gaussian.desc')}</p>
+                </div>
+                <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center mb-3">
+                  <FontAwesomeIcon icon={faCheck} className="text-indigo-500" />
+                </div>
+                <h4 className="font-medium text-center">{t('transform.gaussian.title')}</h4>
+              </div>
+              
+              <div className="w-36 h-36 bg-white rounded-xl shadow-sm border border-indigo-100 p-3 flex flex-col items-center justify-center relative group cursor-help">
+                <div className="absolute inset-0 bg-indigo-500 opacity-0 group-hover:opacity-90 rounded-xl transition-opacity duration-300 flex items-center justify-center p-3">
+                  <p className="text-white text-xs text-center">{t('transform.saltpepper.desc')}</p>
+                </div>
+                <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center mb-3">
+                  <FontAwesomeIcon icon={faCheck} className="text-indigo-500" />
+                </div>
+                <h4 className="font-medium text-center">{t('transform.saltpepper.title')}</h4>
+              </div>
+              
+              <div className="w-36 h-36 bg-white rounded-xl shadow-sm border border-indigo-100 p-3 flex flex-col items-center justify-center relative group cursor-help">
+                <div className="absolute inset-0 bg-indigo-500 opacity-0 group-hover:opacity-90 rounded-xl transition-opacity duration-300 flex items-center justify-center p-3">
+                  <p className="text-white text-xs text-center">{t('transform.brightness.desc')}</p>
+                </div>
+                <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center mb-3">
+                  <FontAwesomeIcon icon={faCheck} className="text-indigo-500" />
+                </div>
+                <h4 className="font-medium text-center">{t('transform.brightness.title')}</h4>
+              </div>
+              
+              <div className="w-36 h-36 bg-white rounded-xl shadow-sm border border-indigo-100 p-3 flex flex-col items-center justify-center relative group cursor-help">
+                <div className="absolute inset-0 bg-indigo-500 opacity-0 group-hover:opacity-90 rounded-xl transition-opacity duration-300 flex items-center justify-center p-3">
+                  <p className="text-white text-xs text-center">{t('transform.blur.desc')}</p>
+                </div>
+                <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center mb-3">
+                  <FontAwesomeIcon icon={faCheck} className="text-indigo-500" />
+                </div>
+                <h4 className="font-medium text-center">{t('transform.blur.title')}</h4>
+              </div>
+            </div>
+            
+            <div className="mt-6 flex justify-center">
+              <div className="bg-green-50 border-l-4 border-green-400 p-3 rounded-r-lg shadow-sm max-w-3xl">
+                <div className="flex">
+                  <FontAwesomeIcon icon={faInfo} className="text-green-400 mr-3 mt-0.5" />
+                  <div>
+                    <p className="text-sm text-green-700">
+                      <strong>{t('transform.insight.title')}</strong> {t('transform.insight.desc')}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
             
             <div className="flex justify-between mt-8">
               <Button
@@ -455,36 +455,295 @@ const Process: React.FC = () => {
       case 4:
         return (
           <div className="text-center mb-8 p-6">
-            <h2 className="text-2xl font-bold mb-8">{t('segment.title')}</h2>
-            <p className="text-gray-600 mb-8">
+            <h2 className="text-2xl font-bold mb-6">{t('segment.title')}</h2>
+            
+            <p className="text-gray-600 mb-6">
               {t('segment.desc')}
             </p>
-            <div className="flex flex-col items-center justify-center">
-              <div className="max-w-xl bg-gray-50 p-4 rounded-lg border border-gray-200 mb-8">
-                <h3 className="font-medium text-gray-700 mb-2 text-left">{t('segment.process')}</h3>
-                <ol className="list-decimal pl-5 text-sm text-gray-600 space-y-2 text-left">
-                  <li>{t('segment.step1')}</li>
-                  <li>{t('segment.step2')}</li>
-                  <li>{t('segment.step3')}</li>
-                  <li>{t('segment.step4')}</li>
-                  <li>{t('segment.step5')}</li>
-                  <li>{t('segment.step6')}</li>
-                  <li>{t('segment.step7')}</li>
-                </ol>
-              </div>
-              {activeImage && originalImageUrl && (
-                <div className="max-w-md mx-auto">
-                  <img 
-                    src={originalImageUrl} 
-                    alt="Segmentation Preview" 
-                    className="w-full h-auto rounded-lg shadow-md opacity-70" 
-                  />
-                  <div className="mt-2 text-sm text-gray-500 italic">
-                    {t('segment.preview')}
+            
+            {/* Segmentation process visualization */}
+            <div className="flex flex-col items-center mb-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl">
+                {/* Step 0: Original Image */}
+                <div 
+                  className="bg-white rounded-lg shadow-sm p-4 border border-gray-200"
+                >
+                  <div className="bg-indigo-50 rounded-full w-8 h-8 flex items-center justify-center mx-auto mb-2">
+                    <span className="text-sm font-bold text-indigo-700">0</span>
+                  </div>
+                  <h3 className="text-indigo-700 font-medium text-center mb-3">{t('segment.step0')}</h3>
+                  
+                  <div className="h-48 flex items-center justify-center bg-gray-50 rounded-lg mb-3">
+                    {activeImage && originalImageUrl ? (
+                      <img 
+                        src={originalImageUrl} 
+                        alt="Original" 
+                        className="max-h-44 max-w-full object-contain" 
+                      />
+                    ) : (
+                      <div className="text-gray-400 text-sm">{t('segment.noImage')}</div>
+                    )}
+                  </div>
+                  
+                  <p className="text-xs text-gray-600">
+                    {t('segment.stepExplanation0')}
+                  </p>
+                </div>
+                
+                {/* Step 1: Grayscale Conversion */}
+                <div 
+                  className="bg-white rounded-lg shadow-sm p-4 border border-gray-200"
+                >
+                  <div className="bg-indigo-50 rounded-full w-8 h-8 flex items-center justify-center mx-auto mb-2">
+                    <span className="text-sm font-bold text-indigo-700">1</span>
+                  </div>
+                  <h3 className="text-indigo-700 font-medium text-center mb-3">{t('segment.step1')}</h3>
+                  
+                  <div className="h-48 flex items-center justify-center bg-gray-50 rounded-lg mb-3 relative">
+                    {activeImage && originalImageUrl ? (
+                      <img 
+                        src={originalImageUrl} 
+                        alt="Grayscale" 
+                        className="max-h-44 max-w-full object-contain grayscale" 
+                      />
+                    ) : (
+                      <div className="text-gray-400 text-sm">{t('segment.noImage')}</div>
+                    )}
+                  </div>
+                  
+                  <p className="text-xs text-gray-600">
+                    {t('segment.stepExplanation1')}
+                  </p>
+                </div>
+                
+                {/* Step 2: Gaussian Blur */}
+                <div 
+                  className="bg-white rounded-lg shadow-sm p-4 border border-gray-200"
+                >
+                  <div className="bg-indigo-50 rounded-full w-8 h-8 flex items-center justify-center mx-auto mb-2">
+                    <span className="text-sm font-bold text-indigo-700">2</span>
+                  </div>
+                  <h3 className="text-indigo-700 font-medium text-center mb-3">{t('segment.step2')}</h3>
+                  
+                  <div className="h-48 flex items-center justify-center bg-gray-50 rounded-lg mb-3">
+                    {activeImage && originalImageUrl ? (
+                      <img 
+                        src={originalImageUrl} 
+                        alt="Gaussian Blur" 
+                        className="max-h-44 max-w-full object-contain grayscale blur-sm" 
+                      />
+                    ) : (
+                      <div className="text-gray-400 text-sm">{t('segment.noImage')}</div>
+                    )}
+                  </div>
+                  
+                  <p className="text-xs text-gray-600">
+                    {t('segment.stepExplanation2')}
+                  </p>
+                </div>
+                
+                {/* Step 3: Adaptive Thresholding */}
+                <div 
+                  className="bg-white rounded-lg shadow-sm p-4 border border-gray-200"
+                >
+                  <div className="bg-indigo-50 rounded-full w-8 h-8 flex items-center justify-center mx-auto mb-2">
+                    <span className="text-sm font-bold text-indigo-700">3</span>
+                  </div>
+                  <h3 className="text-indigo-700 font-medium text-center mb-3">{t('segment.step3')}</h3>
+                  
+                  <div className="h-48 flex items-center justify-center bg-gray-50 rounded-lg mb-3">
+                    {activeImage && originalImageUrl ? (
+                      <div className="max-h-44 max-w-full">
+                        <img 
+                          src="/images/segmentation/step3_thresholding.jpg" 
+                          alt="Thresholding" 
+                          className="max-h-44 max-w-full object-contain" 
+                          onError={(e) => {
+                            // Fallback to simulation using CSS filters if image not available
+                            const target = e.target as HTMLImageElement;
+                            target.onerror = null;
+                            target.src = originalImageUrl;
+                            target.className = "max-h-44 max-w-full object-contain grayscale contrast-200 brightness-150";
+                          }}
+                        />
+                      </div>
+                    ) : (
+                      <div className="text-gray-400 text-sm">{t('segment.noImage')}</div>
+                    )}
+                  </div>
+                  
+                  <p className="text-xs text-gray-600">
+                    {t('segment.stepExplanation3')}
+                  </p>
+                </div>
+                
+                {/* Step 4: Morphological Operations */}
+                <div 
+                  className="bg-white rounded-lg shadow-sm p-4 border border-gray-200"
+                >
+                  <div className="bg-indigo-50 rounded-full w-8 h-8 flex items-center justify-center mx-auto mb-2">
+                    <span className="text-sm font-bold text-indigo-700">4</span>
+                  </div>
+                  <h3 className="text-indigo-700 font-medium text-center mb-3">{t('segment.step4')}</h3>
+                  
+                  <div className="h-48 flex items-center justify-center bg-gray-50 rounded-lg mb-3">
+                    {activeImage && originalImageUrl ? (
+                      <div className="max-h-44 max-w-full">
+                        <img 
+                          src="/images/segmentation/step4_morphology.jpg" 
+                          alt="Morphology" 
+                          className="max-h-44 max-w-full object-contain" 
+                          onError={(e) => {
+                            // Fallback to simulation using CSS filters if image not available
+                            const target = e.target as HTMLImageElement;
+                            target.onerror = null;
+                            target.src = originalImageUrl;
+                            target.className = "max-h-44 max-w-full object-contain grayscale contrast-150 brightness-125";
+                          }}
+                        />
+                      </div>
+                    ) : (
+                      <div className="text-gray-400 text-sm">{t('segment.noImage')}</div>
+                    )}
+                  </div>
+                  
+                  <p className="text-xs text-gray-600">
+                    {t('segment.stepExplanation4')}
+                  </p>
+                </div>
+                
+                {/* Step 5: Find Contours */}
+                <div 
+                  className="bg-white rounded-lg shadow-sm p-4 border border-gray-200"
+                >
+                  <div className="bg-indigo-50 rounded-full w-8 h-8 flex items-center justify-center mx-auto mb-2">
+                    <span className="text-sm font-bold text-indigo-700">5</span>
+                  </div>
+                  <h3 className="text-indigo-700 font-medium text-center mb-3">{t('segment.step5')}</h3>
+                  
+                  <div className="h-48 flex items-center justify-center bg-gray-50 rounded-lg mb-3">
+                    {activeImage && originalImageUrl ? (
+                      <div className="max-h-44 max-w-full">
+                        <img 
+                          src="/images/segmentation/step5_contours.jpg" 
+                          alt="Contours" 
+                          className="max-h-44 max-w-full object-contain" 
+                          onError={(e) => {
+                            // Fallback to simulation using CSS filters if image not available
+                            const target = e.target as HTMLImageElement;
+                            target.onerror = null;
+                            target.src = originalImageUrl;
+                            target.className = "max-h-44 max-w-full object-contain grayscale invert contrast-150";
+                          }}
+                        />
+                      </div>
+                    ) : (
+                      <div className="text-gray-400 text-sm">{t('segment.noImage')}</div>
+                    )}
+                  </div>
+                  
+                  <p className="text-xs text-gray-600">
+                    {t('segment.stepExplanation5')}
+                  </p>
+                </div>
+                
+                {/* Step 6: Filter Contours */}
+                <div 
+                  className="bg-white rounded-lg shadow-sm p-4 border border-gray-200"
+                >
+                  <div className="bg-indigo-50 rounded-full w-8 h-8 flex items-center justify-center mx-auto mb-2">
+                    <span className="text-sm font-bold text-indigo-700">6</span>
+                  </div>
+                  <h3 className="text-indigo-700 font-medium text-center mb-3">{t('segment.step6')}</h3>
+                  
+                  <div className="h-48 flex items-center justify-center bg-gray-50 rounded-lg mb-3">
+                    {activeImage && originalImageUrl ? (
+                      <div className="max-h-44 max-w-full">
+                        <img 
+                          src="/images/segmentation/step6_filtered.jpg" 
+                          alt="Filtered Contours" 
+                          className="max-h-44 max-w-full object-contain" 
+                          onError={(e) => {
+                            // Fallback to simulation using CSS filters if image not available
+                            const target = e.target as HTMLImageElement;
+                            target.onerror = null;
+                            target.src = originalImageUrl;
+                            target.className = "max-h-44 max-w-full object-contain grayscale invert contrast-150 brightness-125";
+                          }}
+                        />
+                      </div>
+                    ) : (
+                      <div className="text-gray-400 text-sm">{t('segment.noImage')}</div>
+                    )}
+                  </div>
+                  
+                  <p className="text-xs text-gray-600">
+                    {t('segment.stepExplanation6')}
+                  </p>
+                </div>
+                
+                {/* Step 7: Extract Characters */}
+                <div 
+                  className="bg-white rounded-lg shadow-sm p-4 border border-gray-200"
+                >
+                  <div className="bg-indigo-50 rounded-full w-8 h-8 flex items-center justify-center mx-auto mb-2">
+                    <span className="text-sm font-bold text-indigo-700">7</span>
+                  </div>
+                  <h3 className="text-indigo-700 font-medium text-center mb-3">{t('segment.step7')}</h3>
+                  
+                  <div className="h-48 flex items-center justify-center bg-gray-50 rounded-lg mb-3">
+                    {activeImage && originalImageUrl ? (
+                      <div className="max-h-44 max-w-full">
+                        <img 
+                          src="/images/segmentation/step7_extraction.jpg" 
+                          alt="Character Extraction" 
+                          className="max-h-44 max-w-full object-contain" 
+                          onError={(e) => {
+                            // Fallback to simulation - show colored boxes around potential characters
+                            const target = e.target as HTMLImageElement;
+                            target.onerror = null;
+                            target.src = originalImageUrl;
+                            target.style.border = "2px solid #6366F1";
+                            target.style.boxSizing = "border-box";
+                          }}
+                        />
+                      </div>
+                    ) : (
+                      <div className="text-gray-400 text-sm">{t('segment.noImage')}</div>
+                    )}
+                  </div>
+                  
+                  <p className="text-xs text-gray-600">
+                    {t('segment.stepExplanation7')}
+                  </p>
+                </div>
+                
+                {/* Flow diagram - optional */}
+                <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200 lg:col-span-3">
+                  <h3 className="text-indigo-700 font-medium text-center mb-3">{t('segment.process')}</h3>
+                  
+                  <div className="flex flex-wrap justify-center gap-2 items-center">
+                    {[
+                      t('segment.step1'),
+                      t('segment.step2'),
+                      t('segment.step3'),
+                      t('segment.step4'),
+                      t('segment.step5'),
+                      t('segment.step6'),
+                      t('segment.step7')
+                    ].map((step, index) => (
+                      <React.Fragment key={index}>
+                        <div className="px-3 py-2 rounded-lg text-xs shadow-sm border border-gray-100 bg-white">
+                          <span className="font-medium text-indigo-600 mr-1">{index + 1}.</span> {step}
+                        </div>
+                        {index < 6 && <FontAwesomeIcon icon={faArrowRight} className="text-gray-400 mx-1" />}
+                      </React.Fragment>
+                    ))}
                   </div>
                 </div>
-              )}
+              </div>
             </div>
+            
             <div className="flex justify-between mt-8">
               <Button
                 variant="secondary"
@@ -511,7 +770,8 @@ const Process: React.FC = () => {
       case 5:
         return (
           <div className="text-center mb-8 p-6">
-            <h2 className="text-2xl font-bold mb-8">{t('recognition.title')}</h2>
+            <h2 className="text-2xl font-bold mb-6">{t('recognition.title')}</h2>
+            
             {isProcessing ? (
               <div className="flex justify-center items-center h-64">
                 <ClipLoader color="#6366F1" size={60} />
@@ -519,35 +779,268 @@ const Process: React.FC = () => {
               </div>
             ) : (
               <div className="flex flex-col items-center">
-                <div className="max-w-xl bg-gray-50 p-4 rounded-lg border border-gray-200 mb-8">
-                  <h3 className="font-medium text-gray-700 mb-2 text-left">{t('recognition.process')}</h3>
-                  <ol className="list-decimal pl-5 text-sm text-gray-600 space-y-2 text-left">
-                    <li>{t('recognition.step1')}</li>
-                    <li>{t('recognition.step2')}</li>
-                    <li>{t('recognition.step3')}</li>
-                    <li>{t('recognition.step4')}
-                      <ul className="list-disc pl-5 mt-1 mb-1">
-                        <li>{t('recognition.step4a')}</li>
-                        <li>{t('recognition.step4b')}</li>
-                        <li>{t('recognition.step4c')}</li>
-                        <li>{t('recognition.step4d')}</li>
-                      </ul>
-                    </li>
-                    <li>{t('recognition.step5')}</li>
-                    <li>{t('recognition.step6')}</li>
-                  </ol>
+                <div className="w-full max-w-6xl mb-8">
+                  {/* Recognition visualization */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    {/* Step 1: Apply degradation techniques */}
+                    <div 
+                      className="bg-white rounded-lg shadow-sm p-4 border border-gray-200"
+                    >
+                      <div className="flex items-center mb-3">
+                        <div className="bg-indigo-50 rounded-full w-8 h-8 flex items-center justify-center mr-3">
+                          <span className="text-sm font-bold text-indigo-700">1</span>
+                        </div>
+                        <h3 className="text-indigo-700 font-medium">{t('recognition.step1')}</h3>
+                      </div>
+                      
+                      <div className="h-48 flex items-center justify-center bg-gray-50 rounded-lg mb-3">
+                        {activeImage && originalImageUrl ? (
+                          <div className="flex space-x-2">
+                            <img 
+                              src={originalImageUrl} 
+                              alt="Original" 
+                              className="max-h-44 max-w-[45%] object-contain" 
+                            />
+                            <FontAwesomeIcon icon={faArrowRight} className="text-gray-400 self-center" />
+                            <img 
+                              src={originalImageUrl} 
+                              alt="Degraded" 
+                              className="max-h-44 max-w-[45%] object-contain grayscale brightness-110 contrast-125" 
+                            />
+                          </div>
+                        ) : (
+                          <div className="text-gray-400 text-sm">{t('recognition.noImage')}</div>
+                        )}
+                      </div>
+                      
+                      <p className="text-xs text-gray-600">
+                        {t('recognition.stepExplanation1')}
+                      </p>
+                    </div>
+                    
+                    {/* Step 2: Preprocess images */}
+                    <div 
+                      className="bg-white rounded-lg shadow-sm p-4 border border-gray-200"
+                    >
+                      <div className="flex items-center mb-3">
+                        <div className="bg-indigo-50 rounded-full w-8 h-8 flex items-center justify-center mr-3">
+                          <span className="text-sm font-bold text-indigo-700">2</span>
+                        </div>
+                        <h3 className="text-indigo-700 font-medium">{t('recognition.step2')}</h3>
+                      </div>
+                      
+                      <div className="h-48 flex items-center justify-center bg-gray-50 rounded-lg mb-3">
+                        {activeImage && originalImageUrl ? (
+                          <div className="max-h-44 max-w-full">
+                            <img 
+                              src="/images/recognition/step2_preprocessing.jpg" 
+                              alt="Preprocessing" 
+                              className="max-h-44 max-w-full object-contain" 
+                              onError={(e) => {
+                                // Fallback to simulation using CSS filters if image not available
+                                const target = e.target as HTMLImageElement;
+                                target.onerror = null;
+                                target.src = originalImageUrl;
+                                target.className = "max-h-44 max-w-full object-contain grayscale contrast-150 brightness-110";
+                              }}
+                            />
+                          </div>
+                        ) : (
+                          <div className="text-gray-400 text-sm">{t('recognition.noImage')}</div>
+                        )}
+                      </div>
+                      
+                      <p className="text-xs text-gray-600">
+                        {t('recognition.stepExplanation2')}
+                      </p>
+                    </div>
+                    
+                    {/* Step 3: Segment characters */}
+                    <div 
+                      className="bg-white rounded-lg shadow-sm p-4 border border-gray-200"
+                    >
+                      <div className="flex items-center mb-3">
+                        <div className="bg-indigo-50 rounded-full w-8 h-8 flex items-center justify-center mr-3">
+                          <span className="text-sm font-bold text-indigo-700">3</span>
+                        </div>
+                        <h3 className="text-indigo-700 font-medium">{t('recognition.step3')}</h3>
+                      </div>
+                      
+                      <div className="h-48 flex items-center justify-center bg-gray-50 rounded-lg mb-3">
+                        {activeImage && originalImageUrl ? (
+                          <div className="max-h-44 max-w-full">
+                            <img 
+                              src="/images/recognition/step3_segmentation.jpg" 
+                              alt="Segmentation" 
+                              className="max-h-44 max-w-full object-contain" 
+                              onError={(e) => {
+                                // Fallback to simulation - show colored boxes around potential characters
+                                const target = e.target as HTMLImageElement;
+                                target.onerror = null;
+                                target.src = originalImageUrl;
+                                target.style.border = "2px solid #6366F1";
+                                target.style.boxSizing = "border-box";
+                              }}
+                            />
+                          </div>
+                        ) : (
+                          <div className="text-gray-400 text-sm">{t('recognition.noImage')}</div>
+                        )}
+                      </div>
+                      
+                      <p className="text-xs text-gray-600">
+                        {t('recognition.stepExplanation3')}
+                      </p>
+                    </div>
+                    
+                    {/* Step 4: Prepare character segments */}
+                    <div 
+                      className="bg-white rounded-lg shadow-sm p-4 border border-gray-200"
+                    >
+                      <div className="flex items-center mb-3">
+                        <div className="bg-indigo-50 rounded-full w-8 h-8 flex items-center justify-center mr-3">
+                          <span className="text-sm font-bold text-indigo-700">4</span>
+                        </div>
+                        <h3 className="text-indigo-700 font-medium">{t('recognition.step4')}</h3>
+                      </div>
+                      
+                      <div className="h-48 flex items-center justify-center bg-gray-50 rounded-lg mb-3">
+                        {activeImage && originalImageUrl ? (
+                          <div className="grid grid-cols-4 gap-2 p-2">
+                            {Array.from({ length: 8 }).map((_, i) => (
+                              <div 
+                                key={i} 
+                                className="w-16 h-16 bg-gray-200 flex items-center justify-center rounded"
+                              >
+                                <span className="text-xs text-gray-600">32x32</span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-gray-400 text-sm">{t('recognition.noImage')}</div>
+                        )}
+                      </div>
+                      
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        <span className="inline-block bg-indigo-50 text-indigo-700 text-xs px-2 py-1 rounded">
+                          {t('recognition.step4a')}
+                        </span>
+                        <span className="inline-block bg-indigo-50 text-indigo-700 text-xs px-2 py-1 rounded">
+                          {t('recognition.step4b')}
+                        </span>
+                        <span className="inline-block bg-indigo-50 text-indigo-700 text-xs px-2 py-1 rounded">
+                          {t('recognition.step4c')}
+                        </span>
+                        <span className="inline-block bg-indigo-50 text-indigo-700 text-xs px-2 py-1 rounded">
+                          {t('recognition.step4d')}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    {/* Step 5: CNN Model Prediction */}
+                    <div 
+                      className="bg-white rounded-lg shadow-sm p-4 border border-gray-200"
+                    >
+                      <div className="flex items-center mb-3">
+                        <div className="bg-indigo-50 rounded-full w-8 h-8 flex items-center justify-center mr-3">
+                          <span className="text-sm font-bold text-indigo-700">5</span>
+                        </div>
+                        <h3 className="text-indigo-700 font-medium">{t('recognition.step5')}</h3>
+                      </div>
+                      
+                      <div className="h-48 flex items-center justify-center bg-gray-50 rounded-lg mb-3">
+                        <div className="flex flex-col items-center">
+                          <div className="flex space-x-2 mb-2">
+                            <div className="w-12 h-12 bg-gray-200 rounded"></div>
+                            <FontAwesomeIcon icon={faArrowRight} className="text-gray-400 self-center" />
+                            <div className="bg-indigo-100 p-2 rounded text-sm text-center">
+                              <div className="font-bold">CNN</div>
+                              <div className="text-xs">MobileNetV2</div>
+                            </div>
+                            <FontAwesomeIcon icon={faArrowRight} className="text-gray-400 self-center" />
+                            <div className="bg-green-100 p-2 rounded text-sm">
+                              <div>A: 98%</div>
+                            </div>
+                          </div>
+                          <div className="text-xs text-gray-500 italic">Prediction process for each character</div>
+                        </div>
+                      </div>
+                      
+                      <p className="text-xs text-gray-600">
+                        {t('recognition.stepExplanation5')}
+                      </p>
+                    </div>
+                    
+                    {/* Step 6: Combine Results */}
+                    <div 
+                      className="bg-white rounded-lg shadow-sm p-4 border border-gray-200"
+                    >
+                      <div className="flex items-center mb-3">
+                        <div className="bg-indigo-50 rounded-full w-8 h-8 flex items-center justify-center mr-3">
+                          <span className="text-sm font-bold text-indigo-700">6</span>
+                        </div>
+                        <h3 className="text-indigo-700 font-medium">{t('recognition.step6')}</h3>
+                      </div>
+                      
+                      <div className="h-48 flex items-center justify-center bg-gray-50 rounded-lg mb-3">
+                        <div className="flex flex-col items-center space-y-4">
+                          <div className="bg-green-50 border border-green-200 rounded p-2 w-40 text-center">
+                            <div className="text-xs text-gray-600">Degraded Result:</div>
+                            <div className="font-bold text-green-700">HELLO</div>
+                            <div className="text-xs text-gray-500">Confidence: 96%</div>
+                          </div>
+                          
+                          <div className="bg-gray-50 border border-gray-200 rounded p-2 w-40 text-center">
+                            <div className="text-xs text-gray-600">Original Result:</div>
+                            <div className="font-bold text-gray-700">HFLLO</div>
+                            <div className="text-xs text-gray-500">Confidence: 78%</div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <p className="text-xs text-gray-600">
+                        {t('recognition.stepExplanation6')}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* Process flow */}
+                  <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200 mb-6">
+                    <h3 className="text-indigo-700 font-medium text-center mb-3">{t('recognition.process')}</h3>
+                    
+                    <div className="flex flex-wrap justify-center gap-2 items-center">
+                      {[
+                        t('recognition.step1'),
+                        t('recognition.step2'),
+                        t('recognition.step3'),
+                        t('recognition.step4'),
+                        t('recognition.step5'),
+                        t('recognition.step6')
+                      ].map((step, index) => (
+                        <React.Fragment key={index}>
+                          <div className="px-3 py-2 rounded-lg text-xs shadow-sm border border-gray-100 bg-white">
+                            <span className="font-medium text-indigo-600 mr-1">{index + 1}.</span> {step}
+                          </div>
+                          {index < 5 && <FontAwesomeIcon icon={faArrowRight} className="text-gray-400 mx-1" />}
+                        </React.Fragment>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <Button
+                    variant="primary"
+                    onClick={handleNextStep}
+                    disabled={isProcessing}
+                    icon={faSync}
+                    iconPosition="left"
+                    className="px-8 py-3"
+                  >
+                    {t('button.processImage')}
+                  </Button>
                 </div>
-                <Button
-                  variant="primary"
-                  onClick={handleNextStep}
-                  disabled={isProcessing}
-                  icon={faSync}
-                  iconPosition="left"
-                >
-                  {t('button.processImage')}
-                </Button>
               </div>
             )}
+            
             <div className="flex justify-between mt-8">
               <Button
                 variant="secondary"
@@ -565,66 +1058,77 @@ const Process: React.FC = () => {
       case 6:
         return (
           <div className="mb-8 p-6">
-            <h2 className="text-2xl font-bold mb-8 text-center">{t('results.title')}</h2>
+            <h2 className="text-2xl font-bold mb-6 text-center">{t('results.title')}</h2>
             {result && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="bg-white p-6 rounded-lg shadow-md">
-                  <h3 className="text-lg font-semibold mb-4">{t('results.originalImage')}</h3>
-                  <div className="mb-4">
-                    <img src={result.original_image} alt="Original" className="w-full h-auto rounded-lg" />
+              <div className="flex flex-col space-y-6">
+                {/* Images Section - Horizontal Layout */}
+                <div className="flex flex-wrap md:flex-nowrap gap-4">
+                  <div className="w-full md:w-1/3 bg-white p-4 rounded-lg shadow-sm">
+                    <h3 className="text-lg font-semibold mb-3">{t('results.originalImage')}</h3>
+                    <div className="mb-2">
+                      <img src={result.original_image} alt="Original" className="w-full h-auto rounded-lg" />
+                    </div>
                   </div>
-                </div>
-                
-                <div className="bg-white p-6 rounded-lg shadow-md">
-                  <h3 className="text-lg font-semibold mb-4">{t('results.degradedImage')}</h3>
-                  <div className="mb-4">
-                    <img src={result.degraded_image} alt="Degraded" className="w-full h-auto rounded-lg" />
-                  </div>
-                  <div className="text-sm text-gray-600">
-                    <p>{t('results.appliedTransformations')}</p>
-                    <ul className="list-disc pl-5 mt-1">
-                      {result.transformation_info?.map((info: string, index: number) => (
-                        <li key={index}>{info}</li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-                
-                <div className="bg-white p-6 rounded-lg shadow-md">
-                  <h3 className="text-lg font-semibold mb-4">{t('results.segmentedChars')}</h3>
-                  <div className="mb-4">
-                    <img src={result.segmented_image} alt="Segmented" className="w-full h-auto rounded-lg" />
-                  </div>
-                </div>
-                
-                <div className="bg-white p-6 rounded-lg shadow-md col-span-1 md:col-span-2">
-                  <h3 className="text-lg font-semibold mb-4">{t('results.modelResults')}</h3>
                   
-                  <div className="mb-6">
-                    <h4 className="font-medium mb-2">{t('results.extractedText')}</h4>
-                    <div className="bg-gray-50 p-3 rounded border">
+                  <div className="w-full md:w-1/3 bg-white p-4 rounded-lg shadow-sm">
+                    <h3 className="text-lg font-semibold mb-3">{t('results.degradedImage')}</h3>
+                    <div className="mb-2">
+                      <img src={result.degraded_image} alt="Degraded" className="w-full h-auto rounded-lg" />
+                    </div>
+                  </div>
+                  
+                  <div className="w-full md:w-1/3 bg-white p-4 rounded-lg shadow-sm">
+                    <h3 className="text-lg font-semibold mb-3">{t('results.segmentedChars')}</h3>
+                    <div className="mb-2">
+                      <img src={result.segmented_image} alt="Segmented" className="w-full h-auto rounded-lg" />
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Horizontal layout for text results and analysis */}
+                <div className="flex flex-wrap md:flex-nowrap gap-4">
+                  <div className="w-full md:w-1/2 bg-white p-4 rounded-lg shadow-sm">
+                    <h3 className="text-lg font-semibold mb-3">{t('results.extractedText')}</h3>
+                    <div className="bg-gray-50 p-3 rounded border min-h-[120px] max-h-[200px] overflow-auto">
                       {result.model_results?.degraded_text || t('results.noText')}
                     </div>
-                    <p className="text-sm text-gray-500 mt-1">
+                    <p className="text-sm text-gray-500 mt-2">
                       {t('results.confidence')} {result.model_results?.degraded_confidence.toFixed(2) || 0}%
                     </p>
                   </div>
                   
-                  <div>
-                    <h4 className="font-medium mb-2">{t('results.analysis')}</h4>
-                    <div className="bg-gray-50 p-3 rounded border">
+                  <div className="w-full md:w-1/2 bg-white p-4 rounded-lg shadow-sm">
+                    <h3 className="text-lg font-semibold mb-3">{t('results.analysis')}</h3>
+                    <div className="bg-gray-50 p-3 rounded border min-h-[120px] max-h-[200px] overflow-auto">
                       <p className="text-sm whitespace-pre-wrap">
                         {result.model_results?.comparison || "No comparison available"}
                       </p>
                     </div>
                     
-                    {/* Note about confidence */}
-                    <div className="mt-4 bg-blue-50 border-l-4 border-blue-400 p-3 text-sm">
-                      <p className="text-blue-700">
-                        <strong>{t('results.note')}</strong> {t('results.noteDesc')}
-                      </p>
+                    {/* Transformations applied */}
+                    <div className="mt-3">
+                      <p className="text-sm font-medium text-gray-700">{t('results.appliedTransformations')}</p>
+                      <div className="flex flex-wrap gap-2 mt-1">
+                        {result.transformation_info?.map((info: string, index: number) => (
+                          <span key={index} className="inline-block bg-indigo-100 text-indigo-800 text-xs px-2 py-1 rounded">
+                            {info}
+                          </span>
+                        ))}
+                      </div>
                     </div>
                   </div>
+                </div>
+                
+                {/* Add ResultActions component */}
+                <div className="mt-4">
+                  <ResultActions result={result} />
+                </div>
+                
+                {/* Note as a floating notification/tooltip */}
+                <div className="bg-blue-50 border-l-4 border-blue-400 p-3 text-sm rounded-r-lg shadow-sm max-w-3xl mx-auto">
+                  <p className="text-blue-700">
+                    <strong>{t('results.note')}</strong> {t('results.noteDesc')}
+                  </p>
                 </div>
               </div>
             )}

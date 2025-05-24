@@ -103,4 +103,11 @@ export interface ProcessingParameter {
   step?: number;
   default: number | string | boolean;
   options?: {value: string; label: string}[];
+}
+
+// Add html2canvas type definition
+declare global {
+  interface Window {
+    html2canvas: (element: HTMLElement, options?: any) => Promise<HTMLCanvasElement>;
+  }
 } 

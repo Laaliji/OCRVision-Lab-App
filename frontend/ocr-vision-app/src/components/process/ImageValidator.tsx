@@ -110,10 +110,11 @@ const ImageValidator: React.FC<ImageValidatorProps> = ({ imageFile, onValidation
             issues.push(t('validation.mustBeGrayscale'));
           }
           if (!hasRequiredSize) {
-            issues.push(t('validation.sizeRequirement', {
-              min: REQUIRED_CHARACTERISTICS.minWidth,
-              max: REQUIRED_CHARACTERISTICS.maxWidth
-            }));
+            issues.push(
+              t('validation.sizeRequirement')
+                .replace('{min}', REQUIRED_CHARACTERISTICS.minWidth.toString())
+                .replace('{max}', REQUIRED_CHARACTERISTICS.maxWidth.toString())
+            );
           }
           message = `${t('validation.doesNotMeet')} ${issues.join(', ')}`;
         }
@@ -182,7 +183,7 @@ const ImageValidator: React.FC<ImageValidatorProps> = ({ imageFile, onValidation
         </div>
       ) : (
         <>
-          <div className={`flex items-center ${isValid ? 'text-green-600' : 'text-red-600'}`}>
+          <div className={`flex items-center ${isValid ? 'text-green-600' : 'text-red-600'} mb-2`}>
             <FontAwesomeIcon 
               icon={isValid ? faCheckCircle : faExclamationTriangle} 
               className="mr-2" 
@@ -191,38 +192,32 @@ const ImageValidator: React.FC<ImageValidatorProps> = ({ imageFile, onValidation
           </div>
           
           {characteristics && (
-            <div className="mt-2 bg-gray-50 p-3 rounded border text-sm">
-              <h4 className="font-medium text-gray-700 mb-1 flex items-center">
-                <FontAwesomeIcon icon={faInfoCircle} className="mr-1 text-gray-500" />
-                {t('validation.characteristics')}
-              </h4>
-              <ul className="grid grid-cols-2 gap-1">
-                <li>
-                  <span className="text-gray-500">{t('validation.dimensions')}</span>{" "}
-                  <span className={!characteristics.hasRequiredSize ? 'text-red-600 font-medium' : ''}>
-                    {characteristics.width} x {characteristics.height}
-                  </span>
-                </li>
-                <li>
-                  <span className="text-gray-500">{t('validation.aspectRatio')}</span>{" "}
-                  {characteristics.aspectRatio.toFixed(2)}
-                </li>
-                <li>
-                  <span className="text-gray-500">{t('validation.bitDepth')}</span>{" "}
-                  {characteristics.bitDepth}
-                </li>
-                <li>
-                  <span className="text-gray-500">{t('validation.grayscale')}</span>{" "}
-                  <span className={REQUIRED_CHARACTERISTICS.mustBeGrayscale && !characteristics.isGrayscale ? 'text-red-600 font-medium' : ''}>
-                    {characteristics.isGrayscale ? t('validation.yes') : t('validation.no')}
-                  </span>
-                </li>
-              </ul>
+            <div className="flex flex-wrap gap-3 mb-3">
+              <div className="bg-gray-50 rounded-lg px-3 py-2 border text-sm flex items-center">
+                <span className="text-gray-500 mr-1">{t('validation.dimensions')}</span>
+                <span className={!characteristics.hasRequiredSize ? 'text-red-600 font-medium' : 'font-medium'}>
+                  {characteristics.width} x {characteristics.height}
+                </span>
+              </div>
+              <div className="bg-gray-50 rounded-lg px-3 py-2 border text-sm flex items-center">
+                <span className="text-gray-500 mr-1">{t('validation.aspectRatio')}</span>
+                <span className="font-medium">{characteristics.aspectRatio.toFixed(2)}</span>
+              </div>
+              <div className="bg-gray-50 rounded-lg px-3 py-2 border text-sm flex items-center">
+                <span className="text-gray-500 mr-1">{t('validation.bitDepth')}</span>
+                <span className="font-medium">{characteristics.bitDepth}</span>
+              </div>
+              <div className="bg-gray-50 rounded-lg px-3 py-2 border text-sm flex items-center">
+                <span className="text-gray-500 mr-1">{t('validation.grayscale')}</span>
+                <span className={REQUIRED_CHARACTERISTICS.mustBeGrayscale && !characteristics.isGrayscale ? 'text-red-600 font-medium' : 'font-medium'}>
+                  {characteristics.isGrayscale ? t('validation.yes') : t('validation.no')}
+                </span>
+              </div>
             </div>
           )}
           
           {!isValid && (
-            <div className="mt-3 bg-yellow-50 border-l-4 border-yellow-400 p-3 text-sm text-yellow-700">
+            <div className="bg-yellow-50 border-l-4 border-yellow-400 p-3 text-sm text-yellow-700 rounded-r-lg">
               <strong>{t('validation.note.title')}</strong> {t('validation.note.text')}
             </div>
           )}
