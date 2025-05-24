@@ -2,8 +2,12 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEye } from '@fortawesome/free-solid-svg-icons';
+import LanguageSwitcher from '../common/LanguageSwitcher';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 const Header: React.FC = () => {
+  const { t } = useLanguage();
+  
   const handleHashLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
     e.preventDefault();
     
@@ -26,24 +30,31 @@ const Header: React.FC = () => {
           <FontAwesomeIcon icon={faEye} className="text-indigo-600 text-2xl" />
           <span className="text-2xl font-bold text-gray-800">OCR<span className="text-indigo-600">Vision</span></span>
         </Link>
-        <nav className="hidden md:flex space-x-8">
-          <Link to="/" className="text-gray-600 hover:text-indigo-600 transition">Accueil</Link>
-          <a 
-            href="/#features" 
-            className="text-gray-600 hover:text-indigo-600 transition"
-            onClick={(e) => handleHashLinkClick(e, 'features')}
-          >
-            Fonctionnalités
-          </a>
-          <a 
-            href="/#how-it-works" 
-            className="text-gray-600 hover:text-indigo-600 transition"
-            onClick={(e) => handleHashLinkClick(e, 'how-it-works')}
-          >
-            Comment ça marche
-          </a>
-          <Link to="/process" className="text-gray-600 hover:text-indigo-600 transition">Traitement</Link>
-        </nav>
+        <div className="flex items-center">
+          <nav className="hidden md:flex space-x-8 mr-6">
+            <Link to="/" className="text-gray-600 hover:text-indigo-600 transition">
+              {t('header.home')}
+            </Link>
+            <a 
+              href="/#features" 
+              className="text-gray-600 hover:text-indigo-600 transition"
+              onClick={(e) => handleHashLinkClick(e, 'features')}
+            >
+              {t('header.features')}
+            </a>
+            <a 
+              href="/#how-it-works" 
+              className="text-gray-600 hover:text-indigo-600 transition"
+              onClick={(e) => handleHashLinkClick(e, 'how-it-works')}
+            >
+              {t('header.howItWorks')}
+            </a>
+            <Link to="/process" className="text-gray-600 hover:text-indigo-600 transition">
+              {t('header.process')}
+            </Link>
+          </nav>
+          <LanguageSwitcher />
+        </div>
       </div>
     </header>
   );

@@ -1,2 +1,4 @@
 app/static/uploads/*
 app/static/processed/*
+
+final_best_model.h5

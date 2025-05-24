@@ -5,8 +5,11 @@ import { faArrowRight, faImage, faFont, faChartBar, faMagic } from '@fortawesome
 import { motion } from 'framer-motion';
 import TypingEffect from '../common/TypingEffect';
 import Button from '../common/Button';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 const Home: React.FC = () => {
+  const { t } = useLanguage();
+  
   // Variantes d'animation pour les éléments
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -85,7 +88,12 @@ const Home: React.FC = () => {
             >
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
                 <TypingEffect
-                  texts={["Extraction intelligente de texte", "Reconnaissance avancée de documents", "Solution OCR de haute précision", "Traitement d'images optimisé"]}
+                  texts={[
+                    t('home.hero.title1'),
+                    t('home.hero.title2'),
+                    t('home.hero.title3'),
+                    t('home.hero.title4')
+                  ]}
                   typingSpeed={80}
                   eraseSpeed={10}
                   typingDelay={100}
@@ -99,7 +107,7 @@ const Home: React.FC = () => {
                 transition={{ delay: 0.5, duration: 0.8 }}
                 className="text-xl opacity-90 mb-8 max-w-lg"
               >
-                OCRVision utilise des techniques avancées de traitement d'image et l'IA pour extraire du texte même à partir d'images à faible résolution.
+                {t('home.hero.subtitle')}
               </motion.p>
               <motion.div
                 whileHover={{ scale: 1.05 }}
@@ -112,7 +120,7 @@ const Home: React.FC = () => {
                     icon={faArrowRight}
                     iconPosition="right"
                   >
-                    Commencer maintenant
+                    {t('home.hero.cta')}
                   </Button>
                 </Link>
               </motion.div>
@@ -139,15 +147,12 @@ const Home: React.FC = () => {
                   className="glass-card rounded-lg p-4 relative z-10 animate-float"
                 >
                   <img src="https://images.unsplash.com/photo-1595500381751-d838bbf46553?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=400&h=400&q=80" alt="OCR example" className="rounded shadow-lg" />
-                  <motion.div 
-                    initial={{ opacity: 0, x: 20, y: 20 }}
-                    animate={{ opacity: 1, x: 0, y: 0 }}
-                    transition={{ delay: 1, duration: 0.5 }}
-                    className="absolute -bottom-4 -right-4 bg-white rounded-lg p-3 shadow-lg"
-                  >
-                    <i className="fas fa-check-circle text-green-500 mr-2"></i>
-                    <span className="text-sm font-medium">Texte extrait avec succès</span>
-                  </motion.div>
+                  <div className="absolute -bottom-4 -right-4 bg-white rounded-lg p-3 shadow-md">
+                    <div className="flex items-center">
+                      <i className="fas fa-check-circle text-green-600 mr-2"></i>
+                      <span className="text-sm font-medium text-gray-800">{t('home.hero.successText')}</span>
+                    </div>
+                  </div>
                 </motion.div>
               </div>
             </motion.div>
@@ -165,7 +170,7 @@ const Home: React.FC = () => {
             transition={{ duration: 0.5 }}
             className="text-3xl font-bold text-center mb-12"
           >
-            Fonctionnalités principales
+            {t('home.features.title')}
           </motion.h2>
           
           <motion.div 
@@ -184,9 +189,9 @@ const Home: React.FC = () => {
               <div className="feature-icon w-14 h-14 flex items-center justify-center bg-indigo-100 text-indigo-600 text-xl mb-5">
                 <FontAwesomeIcon icon={faImage} />
               </div>
-              <h3 className="text-xl font-semibold mb-3">Traitement d'images avancé</h3>
+              <h3 className="text-xl font-semibold mb-3">{t('home.features.feature1.title')}</h3>
               <p className="text-gray-600">
-                Conversion en niveaux de gris, seuillage adaptatif, et débruitage pour optimiser la qualité de l'image avant extraction.
+                {t('home.features.feature1.desc')}
               </p>
             </motion.div>
             
@@ -199,9 +204,9 @@ const Home: React.FC = () => {
               <div className="feature-icon w-14 h-14 flex items-center justify-center bg-purple-100 text-purple-600 text-xl mb-5">
                 <FontAwesomeIcon icon={faFont} />
               </div>
-              <h3 className="text-xl font-semibold mb-3">OCR haute précision</h3>
+              <h3 className="text-xl font-semibold mb-3">{t('home.features.feature2.title')}</h3>
               <p className="text-gray-600">
-                Utilisation de Tesseract OCR pour une reconnaissance de texte fiable, même sur des documents de qualité médiocre.
+                {t('home.features.feature2.desc')}
               </p>
             </motion.div>
             
@@ -214,9 +219,9 @@ const Home: React.FC = () => {
               <div className="feature-icon w-14 h-14 flex items-center justify-center bg-blue-100 text-blue-600 text-xl mb-5">
                 <FontAwesomeIcon icon={faChartBar} />
               </div>
-              <h3 className="text-xl font-semibold mb-3">Analyse comparative</h3>
+              <h3 className="text-xl font-semibold mb-3">{t('home.features.feature3.title')}</h3>
               <p className="text-gray-600">
-                Visualisez la différence entre l'extraction directe et l'extraction avec prétraitement pour mesurer l'amélioration.
+                {t('home.features.feature3.desc')}
               </p>
             </motion.div>
           </motion.div>
@@ -231,9 +236,9 @@ const Home: React.FC = () => {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
           >
-            <h2 className="text-3xl font-bold text-center mb-8">Comment ça marche</h2>
+            <h2 className="text-3xl font-bold text-center mb-8">{t('home.howItWorks.title')}</h2>
             <p className="text-gray-600 text-center max-w-3xl mx-auto mb-12">
-              Notre application utilise des techniques avancées de traitement d'images et de vision par ordinateur pour optimiser la reconnaissance de texte dans des images de faible qualité.
+              {t('home.howItWorks.subtitle')}
             </p>
           </motion.div>
           
@@ -256,12 +261,12 @@ const Home: React.FC = () => {
                   >
                     1
                   </motion.div>
-                  <h3 className="text-xl font-semibold text-center">Acquisition d'image</h3>
+                  <h3 className="text-xl font-semibold text-center">{t('home.howItWorks.step1.title')}</h3>
                 </div>
                 <div className="p-6 md:w-3/4">
                   <div className="mb-4">
-                    <h4 className="text-lg font-medium mb-2 text-gray-800">Téléchargement et analyse</h4>
-                    <p className="text-gray-600">L'utilisateur télécharge une image contenant du texte. Le système analyse les propriétés de l'image : résolution, profondeur de couleur, et rapport signal/bruit.</p>
+                    <h4 className="text-lg font-medium mb-2 text-gray-800">{t('home.howItWorks.step1.subtitle')}</h4>
+                    <p className="text-gray-600">{t('home.howItWorks.step1.desc')}</p>
                   </div>
                 </div>
               </div>
@@ -284,12 +289,12 @@ const Home: React.FC = () => {
                   >
                     2
                   </motion.div>
-                  <h3 className="text-xl font-semibold text-center">Prétraitement avancé</h3>
+                  <h3 className="text-xl font-semibold text-center">{t('home.howItWorks.step2.title')}</h3>
                 </div>
                 <div className="p-6 md:w-3/4">
                   <div className="mb-4">
-                    <h4 className="text-lg font-medium mb-2 text-gray-800">Amélioration de l'image</h4>
-                    <p className="text-gray-600">Application de techniques avancées comme l'égalisation adaptative d'histogramme, la réduction de bruit et le seuillage adaptatif pour améliorer la visibilité du texte.</p>
+                    <h4 className="text-lg font-medium mb-2 text-gray-800">{t('home.howItWorks.step2.subtitle')}</h4>
+                    <p className="text-gray-600">{t('home.howItWorks.step2.desc')}</p>
                   </div>
                 </div>
               </div>
@@ -312,12 +317,12 @@ const Home: React.FC = () => {
                   >
                     3
                   </motion.div>
-                  <h3 className="text-xl font-semibold text-center">Extraction OCR</h3>
+                  <h3 className="text-xl font-semibold text-center">{t('home.howItWorks.step3.title')}</h3>
                 </div>
                 <div className="p-6 md:w-3/4">
                   <div className="mb-4">
-                    <h4 className="text-lg font-medium mb-2 text-gray-800">Reconnaissance de texte</h4>
-                    <p className="text-gray-600">Le moteur OCR analyse l'image prétraitée pour identifier et extraire le texte, avec comparaison des résultats avant et après prétraitement.</p>
+                    <h4 className="text-lg font-medium mb-2 text-gray-800">{t('home.howItWorks.step3.subtitle')}</h4>
+                    <p className="text-gray-600">{t('home.howItWorks.step3.desc')}</p>
                   </div>
                 </div>
               </div>
@@ -342,7 +347,7 @@ const Home: React.FC = () => {
                   icon={faMagic}
                   iconPosition="right"
                 >
-                  Essayer maintenant
+                  {t('home.howItWorks.cta')}
                 </Button>
               </Link>
             </motion.div>

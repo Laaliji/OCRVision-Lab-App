@@ -13,6 +13,9 @@
                     animation: {
                         blob: "blob 7s infinite",
                         float: "float 6s ease-in-out infinite",
+                        pulse: "pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+                        bounce: "bounce 1s ease-in-out 5",
+                        shake: "shake 0.5s ease-in-out infinite",
                     },
                     keyframes: {
                         blob: {
@@ -35,6 +38,36 @@
                             },
                             "50%": {
                                 transform: "translateY(-20px)",
+                            },
+                        },
+                        pulse: {
+                            "0%, 100%": {
+                                opacity: 1,
+                            },
+                            "50%": {
+                                opacity: 0.8,
+                            },
+                        },
+                        shake: {
+                            "0%, 100%": {
+                                transform: "translateX(0)",
+                            },
+                            "10%, 30%, 50%, 70%, 90%": {
+                                transform: "translateX(-5px)",
+                            },
+                            "20%, 40%, 60%, 80%": {
+                                transform: "translateX(5px)",
+                            },
+                        },
+                        bounce: {
+                            "0%, 20%, 50%, 80%, 100%": {
+                                transform: "translateY(0)",
+                            },
+                            "40%": {
+                                transform: "translateY(-20px)",
+                            },
+                            "60%": {
+                                transform: "translateY(-10px)",
                             },
                         },
                     },
@@ -91,6 +124,20 @@
         .delay-4000 {
             animation-delay: 4s;
         }
+        
+        .success-box {
+            box-shadow: 0 0 25px rgba(0, 255, 0, 0.7);
+            animation: glow 1.5s ease-in-out infinite alternate;
+        }
+        
+        @keyframes glow {
+            from {
+                box-shadow: 0 0 15px rgba(72, 187, 120, 0.7);
+            }
+            to {
+                box-shadow: 0 0 40px rgba(72, 187, 120, 0.95);
+            }
+        }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -116,6 +163,18 @@
         <div class="absolute top-0 -right-4 w-72 h-72 bg-yellow-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob delay-2000"></div>
         <div class="absolute -bottom-8 left-20 w-72 h-72 bg-pink-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob delay-4000"></div>
         
+        <!-- Success message banner -->
+        <div class="relative z-20 mb-8">
+            <div class="bg-white/20 backdrop-blur-md border border-white/30 rounded-lg py-2 px-4 mx-auto max-w-xl text-center animate-pulse success-box">
+                <div class="flex items-center justify-center">
+                    <div class="bg-green-500 rounded-full p-1 mr-2">
+                        <i class="fas fa-check-circle text-white"></i>
+                    </div>
+                    <p class="font-bold text-white text-lg">Notre technologie extrait le texte de vos images avec précision!</p>
+                </div>
+            </div>
+        </div>
+        
         <div class="container mx-auto px-4 relative z-10">
             <div class="flex flex-col md:flex-row items-center">
                 <div class="md:w-1/2 mb-10 md:mb-0">
@@ -125,9 +184,16 @@
                     <p class="text-xl opacity-90 mb-8 max-w-lg">
                         OCRVision utilise des techniques avancées de traitement d'image et l'IA pour extraire du texte même à partir d'images à faible résolution.
                     </p>
-                    <a href="/process" class="btn-primary text-white font-semibold py-4 px-8 rounded-full inline-flex items-center">
+                    <a href="/process" class="btn-primary text-white font-semibold py-4 px-8 rounded-full inline-flex items-center relative group">
                         <span class="mr-2">Commencer maintenant</span>
                         <i class="fas fa-arrow-right"></i>
+                        <div class="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-white rounded-lg px-3 py-2 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 w-max pointer-events-none">
+                            <div class="flex items-center">
+                                <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                                <span class="text-sm font-medium text-gray-800">Extraire du texte à partir d'images</span>
+                            </div>
+                            <div class="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-4 h-4 bg-white rotate-45"></div>
+                        </div>
                     </a>
                 </div>
                 <div class="md:w-1/2 flex justify-center">
@@ -136,9 +202,14 @@
                         <div class="w-64 h-64 bg-purple-100 absolute -top-4 -left-4 rounded-lg transform -rotate-6"></div>
                         <div class="glass-card rounded-lg p-4 relative z-10 animate-float">
                             <img src="https://images.unsplash.com/photo-1595500381751-d838bbf46553?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=400&h=400&q=80" alt="OCR example" class="rounded shadow-lg">
-                            <div class="absolute -bottom-4 -right-4 bg-white rounded-lg p-3 shadow-lg">
-                                <i class="fas fa-check-circle text-green-500 mr-2"></i>
-                                <span class="text-sm font-medium">Texte extrait avec succès</span>
+                            <div class="absolute -bottom-10 -right-10 bg-gradient-to-r from-green-500 to-blue-600 rounded-xl p-5 shadow-2xl transform transition-all duration-300 hover:scale-110 animate-shake success-box z-20">
+                                <div class="flex items-center">
+                                    <div class="bg-white rounded-full p-2 mr-3">
+                                        <i class="fas fa-check-circle text-green-500 text-2xl"></i>
+                                    </div>
+                                    <span class="text-lg font-extrabold text-white tracking-wide">Texte extrait avec succès!</span>
+                                </div>
+                                <div class="absolute -top-4 -right-4 bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold animate-pulse">!</div>
                             </div>
                         </div>
                     </div>
@@ -317,9 +388,16 @@
             </div>
             
             <div class="text-center mt-12">
-                <a href="/process" class="btn-primary text-white font-semibold py-3 px-6 rounded-full inline-flex items-center">
+                <a href="/process" class="btn-primary text-white font-semibold py-3 px-6 rounded-full inline-flex items-center relative group">
                     <span class="mr-2">Essayez maintenant</span>
                     <i class="fas fa-play"></i>
+                    <div class="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-white rounded-lg px-3 py-2 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 w-max pointer-events-none">
+                        <div class="flex items-center">
+                            <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                            <span class="text-sm font-medium text-gray-800">Texte extrait avec succès</span>
+                        </div>
+                        <div class="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-4 h-4 bg-white rotate-45"></div>
+                    </div>
                 </a>
             </div>
         </div>
