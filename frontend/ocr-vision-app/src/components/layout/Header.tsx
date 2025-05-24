@@ -52,6 +52,9 @@ const Header: React.FC = () => {
             <Link to="/process" className="text-gray-600 hover:text-indigo-600 transition">
               {t('header.process')}
             </Link>
+            <Link to="/text-recognition" className="text-gray-600 hover:text-indigo-600 transition">
+              {t('textRecognition.title')}
+            </Link>
           </nav>
           <LanguageSwitcher />
         </div>

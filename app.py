@@ -13,6 +13,7 @@ from werkzeug.utils import secure_filename
 from flask_cors import CORS
 import uuid
 import string
+import traceback
 
 # Chemin vers l'exécutable Tesseract (vérifiez le chemin réel après installation)
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
@@ -320,6 +321,145 @@ def extract_text_with_model(image):
         print(f"Error in extract_text_with_model: {e}")
         return "Error in model prediction", []
 
+def extract_text_as_words(image):
+    """
+    Extract text as complete words by first segmenting into words, then characters
+    This improves OCR accuracy for text rather than isolated characters
+    """
+    try:
+        # Convert to grayscale if needed
+        if len(image.shape) == 3:
+            gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        else:
+            gray = image.copy()
+        
+        # Create a copy of the image for processing
+        image_copy = image.copy()
+        
+        # Binarize the image
+        _, binary = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+        
+        # Dilate the image to connect characters into words
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (15, 3))  # Horizontal kernel for words
+        dilated_words = cv2.dilate(binary, kernel, iterations=1)
+        
+        # Find word contours
+        word_contours, _ = cv2.findContours(dilated_words, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        
+        # Sort words from left to right and top to bottom
+        def sort_contours(cnts):
+            # Sort by top-to-bottom first
+            sorted_by_y = sorted(cnts, key=lambda c: cv2.boundingRect(c)[1])
+            
+            # Group contours that are roughly on the same line
+            y_groups = {}
+            for cnt in sorted_by_y:
+                x, y, w, h = cv2.boundingRect(cnt)
+                found = False
+                for group_y in y_groups.keys():
+                    if abs(y - group_y) < h * 0.5:  # If within 50% of height, consider same line
+                        y_groups[group_y].append(cnt)
+                        found = True
+                        break
+                if not found:
+                    y_groups[y] = [cnt]
+            
+            # Sort each line from left to right
+            result = []
+            for y in sorted(y_groups.keys()):
+                line_cnts = sorted(y_groups[y], key=lambda c: cv2.boundingRect(c)[0])
+                result.extend(line_cnts)
+            
+            return result
+        
+        word_contours = sort_contours(word_contours)
+        
+        # Process each word
+        all_predictions = []
+        recognized_text = ""
+        
+        for word_contour in word_contours:
+            # Get word bounding box
+            x, y, w, h = cv2.boundingRect(word_contour)
+            
+            # Skip very small contours (noise)
+            if w < 10 or h < 10:
+                continue
+                
+            # Extract word region
+            word_image = image_copy[y:y+h, x:x+w]
+            
+            # Process for better character segmentation
+            word_gray = cv2.cvtColor(word_image, cv2.COLOR_BGR2GRAY) if len(word_image.shape) == 3 else word_image
+            _, word_binary = cv2.threshold(word_gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+            
+            # Use a smaller kernel for character segmentation
+            char_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
+            word_binary = cv2.morphologyEx(word_binary, cv2.MORPH_CLOSE, char_kernel)
+            
+            # Find character contours
+            char_contours, _ = cv2.findContours(word_binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            
+            # Sort characters from left to right
+            char_contours = sorted(char_contours, key=lambda c: cv2.boundingRect(c)[0])
+            
+            # Process each character in the word
+            word_text = ""
+            word_predictions = []
+            
+            for char_contour in char_contours:
+                # Get character bounding box
+                cx, cy, cw, ch = cv2.boundingRect(char_contour)
+                
+                # Skip very small contours (noise)
+                if cw < 3 or ch < 3:
+                    continue
+                
+                # Add padding around character
+                padding = 2
+                cx_start = max(0, cx - padding)
+                cy_start = max(0, cy - padding)
+                cx_end = min(word_binary.shape[1], cx + cw + padding)
+                cy_end = min(word_binary.shape[0], cy + ch + padding)
+                
+                # Extract character region
+                char_image = word_gray[cy_start:cy_end, cx_start:cx_end]
+                
+                if char_image.size == 0:
+                    continue
+                
+                # Predict character
+                char, confidence = predict_character(char_image)
+                
+                # Add prediction info
+                word_predictions.append({
+                    'character': char,
+                    'confidence': confidence,
+                    'bbox': [x + cx, y + cy, cw, ch]  # Global coordinates
+                })
+                
+                # Add character to word text if confidence is high enough
+                if confidence > 0.3:
+                    word_text += char
+                else:
+                    word_text += '?'
+            
+            # Add predictions from this word
+            all_predictions.extend(word_predictions)
+            
+            # Add word to recognized text with a space
+            if word_text:
+                recognized_text += word_text + " "
+        
+        # Remove trailing space
+        recognized_text = recognized_text.strip()
+        
+        return recognized_text, all_predictions
+    except Exception as e:
+        print(f"Error in extract_text_as_words: {e}")
+        traceback.print_exc()
+        return "Error in word-based text recognition", []
+
 def extract_text_tesseract(image):
     """
     Extract text using traditional Tesseract OCR
@@ -342,6 +482,118 @@ def extract_text_tesseract(image):
         print(f"Error in extract_text_tesseract: {e}")
         return "Error in Tesseract OCR"
 
+def predict_word_from_image(image, target_size=(32, 32)):
+    """
+    Predict a word directly from an image containing multiple characters.
+    This function segments the image into characters and recognizes each character
+    in context of the word.
+    
+    Args:
+        image (np.array): Image in BGR or grayscale format
+        target_size (tuple): Size to resize each character image to
+        
+    Returns:
+        str: Predicted word
+        list: List of characters with their bounding boxes and confidence
+    """
+    try:
+        # Convert to grayscale if needed
+        if len(image.shape) == 3:
+            gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        else:
+            gray = image.copy()
+        
+        # Binarize the image (invert for black text on white background)
+        _, binary = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+        
+        # Apply morphological operations to clean up the image
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
+        binary = cv2.morphologyEx(binary, cv2.MORPH_CLOSE, kernel)
+        
+        # Find contours of the characters
+        contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        
+        # Filter contours based on area and aspect ratio
+        char_contours = []
+        min_area = 50  # Minimum area for a character
+        max_area = 5000  # Maximum area for a character
+        min_width = 8
+        min_height = 15
+        max_aspect_ratio = 3.0  # width/height ratio
+        
+        for contour in contours:
+            x, y, w, h = cv2.boundingRect(contour)
+            area = cv2.contourArea(contour)
+            
+            # Filter based on size and aspect ratio
+            if (area >= min_area and area <= max_area and 
+                w >= min_width and h >= min_height and
+                w/h <= max_aspect_ratio):
+                char_contours.append(contour)
+        
+        # Sort contours from left to right (reading order)
+        bounding_boxes = [cv2.boundingRect(c) for c in char_contours]
+        sorted_contours = [c for _, c in sorted(zip(bounding_boxes, char_contours), key=lambda b: b[0][0])]
+        
+        predicted_word = ""
+        char_predictions = []
+        
+        # Process each character
+        for contour in sorted_contours:
+            x, y, w, h = cv2.boundingRect(contour)
+            
+            # Extract the character region with padding
+            padding = 2
+            x_start = max(0, x - padding)
+            y_start = max(0, y - padding)
+            x_end = min(gray.shape[1], x + w + padding)
+            y_end = min(gray.shape[0], y + h + padding)
+            
+            char_img = gray[y_start:y_end, x_start:x_end]
+            
+            if char_img.size == 0:
+                continue
+            
+            # Resize to target size
+            resized = cv2.resize(char_img, target_size, interpolation=cv2.INTER_AREA)
+            
+            # Prepare image for model prediction
+            if len(resized.shape) == 2:  # Grayscale
+                # Convert to RGB (3 channels) if model expects it
+                char_rgb = cv2.cvtColor(resized, cv2.COLOR_GRAY2RGB)
+            else:
+                char_rgb = resized
+            
+            # Normalize pixel values
+            char_normalized = char_rgb.astype(np.float32) / 255.0
+            
+            # Add batch dimension
+            char_batch = np.expand_dims(char_normalized, axis=0)
+            
+            # Make prediction
+            predictions = model.predict(char_batch, verbose=0)
+            
+            # Get the predicted class and confidence
+            predicted_class = np.argmax(predictions[0])
+            confidence = float(np.max(predictions[0]))
+            
+            # Map class index to character
+            predicted_char = CHARACTER_CLASSES[predicted_class]
+            
+            # Add to result
+            predicted_word += predicted_char
+            char_predictions.append({
+                'character': predicted_char,
+                'confidence': confidence,
+                'bbox': [x, y, w, h]
+            })
+        
+        return predicted_word, char_predictions
+    except Exception as e:
+        print(f"Error in predict_word_from_image: {e}")
+        traceback.print_exc()
+        return "", []
+
 def image_to_base64(image):
     # Convert OpenCV image to base64 string
     _, buffer = cv2.imencode('.jpg', image)
@@ -355,6 +607,10 @@ def index():
 @app.route('/process', methods=['GET', 'POST'])
 def process():
     return render_template('process.html')
+
+@app.route('/word_recognition', methods=['GET'])
+def word_recognition():
+    return render_template('word_recognition.html')
 
 @app.route('/process_image', methods=['POST'])
 def process_image_api():
@@ -390,6 +646,7 @@ def process_image_api():
             
             # Extract text using both methods for degraded image
             degraded_text_model, degraded_predictions = extract_text_with_model(degraded)
+            degraded_text_words, degraded_predictions_words = extract_text_as_words(degraded)
             degraded_text_tesseract = extract_text_tesseract(degraded)
             
             # Preprocess and extract text with advanced techniques
@@ -399,6 +656,7 @@ def process_image_api():
             
             # Extract text using both methods for preprocessed image
             preprocessed_text_model, preprocessed_predictions = extract_text_with_model(preprocessed)
+            preprocessed_text_words, preprocessed_predictions_words = extract_text_as_words(preprocessed)
             preprocessed_text_tesseract = extract_text_tesseract(preprocessed)
             
             # Calculate improvement metrics
@@ -406,6 +664,10 @@ def process_image_api():
             preprocessed_count_model = len(preprocessed_text_model.strip())
             degraded_count_tesseract = len(degraded_text_tesseract.strip())
             preprocessed_count_tesseract = len(preprocessed_text_tesseract.strip())
+            
+            # Word-based metrics
+            degraded_count_words = len(degraded_text_words.strip())
+            preprocessed_count_words = len(preprocessed_text_words.strip())
             
             # Model comparison
             if degraded_count_model == 0 and preprocessed_count_model == 0:
@@ -415,6 +677,15 @@ def process_image_api():
             else:
                 model_improvement = ((preprocessed_count_model - degraded_count_model) / degraded_count_model) * 100
                 model_comparison = f"Le modèle a amélioré la détection de {model_improvement:.1f}% avec le prétraitement."
+            
+            # Words model comparison
+            if degraded_count_words == 0 and preprocessed_count_words == 0:
+                words_model_comparison = "Le modèle par mots n'a détecté aucun caractère dans les deux images."
+            elif degraded_count_words == 0:
+                words_model_comparison = "Le prétraitement a permis au modèle par mots de détecter des caractères."
+            else:
+                words_model_improvement = ((preprocessed_count_words - degraded_count_words) / degraded_count_words) * 100
+                words_model_comparison = f"Le modèle par mots a amélioré la détection de {words_model_improvement:.1f}% avec le prétraitement."
             
             # Tesseract comparison
             if degraded_count_tesseract == 0 and preprocessed_count_tesseract == 0:
@@ -429,6 +700,10 @@ def process_image_api():
             avg_confidence_degraded = np.mean([p['confidence'] for p in degraded_predictions]) if degraded_predictions else 0.0
             avg_confidence_preprocessed = np.mean([p['confidence'] for p in preprocessed_predictions]) if preprocessed_predictions else 0.0
             
+            # Calculate average confidence for word-based model predictions
+            avg_confidence_degraded_words = np.mean([p['confidence'] for p in degraded_predictions_words]) if degraded_predictions_words else 0.0
+            avg_confidence_preprocessed_words = np.mean([p['confidence'] for p in preprocessed_predictions_words]) if preprocessed_predictions_words else 0.0
+            
             # Paths for frontend
             base_url = request.url_root
             
@@ -438,7 +713,7 @@ def process_image_api():
                 'degraded_image': f"{base_url}static/processed/degraded_{unique_filename}",
                 'preprocessed_image': f"{base_url}static/processed/preprocessed_{unique_filename}",
                 
-                # Model results
+                # Character model results
                 'model_results': {
                     'degraded_text': degraded_text_model,
                     'preprocessed_text': preprocessed_text_model,
@@ -449,6 +724,17 @@ def process_image_api():
                     'comparison': model_comparison
                 },
                 
+                # Word-based model results
+                'words_model_results': {
+                    'degraded_text': degraded_text_words,
+                    'preprocessed_text': preprocessed_text_words,
+                    'degraded_predictions': degraded_predictions_words,
+                    'preprocessed_predictions': preprocessed_predictions_words,
+                    'degraded_confidence': float(avg_confidence_degraded_words),
+                    'preprocessed_confidence': float(avg_confidence_preprocessed_words),
+                    'comparison': words_model_comparison
+                },
+                
                 # Tesseract results
                 'tesseract_results': {
                     'degraded_text': degraded_text_tesseract,
@@ -457,9 +743,9 @@ def process_image_api():
                 },
                 
                 # Legacy fields for backward compatibility
-                'degraded_text': degraded_text_tesseract,
-                'preprocessed_text': preprocessed_text_tesseract,
-                'comparison': tesseract_comparison
+                'degraded_text': degraded_text_words,  # Using word-based as default
+                'preprocessed_text': preprocessed_text_words,  # Using word-based as default
+                'comparison': words_model_comparison  # Using word-based as default
             })
             
         except Exception as e:
@@ -643,6 +929,211 @@ def process_step_api():
                     }
                 })
             
+            elif step == '6':
+                # Step 6: Word segmentation
+                degraded = degrade_image(image)
+                preprocessed = preprocess_image(image)
+                
+                # Save images
+                degraded_path = os.path.join(app.config['PROCESSED_FOLDER'], f"degraded_{unique_filename}")
+                preprocessed_path = os.path.join(app.config['PROCESSED_FOLDER'], f"preprocessed_{unique_filename}")
+                
+                cv2.imwrite(degraded_path, degraded)
+                cv2.imwrite(preprocessed_path, preprocessed)
+                
+                # First convert to binary
+                gray = cv2.cvtColor(preprocessed, cv2.COLOR_BGR2GRAY)
+                _, binary = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+                
+                # Dilate to connect characters into words
+                word_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (15, 3))
+                dilated_words = cv2.dilate(binary, word_kernel, iterations=1)
+                
+                # Find word contours
+                word_contours, _ = cv2.findContours(dilated_words, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                
+                # Filter small contours
+                filtered_word_contours = []
+                for contour in word_contours:
+                    x, y, w, h = cv2.boundingRect(contour)
+                    if w >= 10 and h >= 10:
+                        filtered_word_contours.append(contour)
+                
+                # Create visualization with word bounding boxes
+                word_viz = preprocessed.copy()
+                for i, word_contour in enumerate(filtered_word_contours):
+                    x, y, w, h = cv2.boundingRect(word_contour)
+                    cv2.rectangle(word_viz, (x, y), (x + w, y + h), (0, 0, 255), 2)
+                    cv2.putText(word_viz, f"W{i+1}", (x, y-5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
+                
+                # Save word segmentation visualization
+                word_viz_path = os.path.join(app.config['PROCESSED_FOLDER'], f"word_segmented_{unique_filename}")
+                cv2.imwrite(word_viz_path, word_viz)
+                
+                # Create visualization with both word and character segmentation
+                word_char_viz = preprocessed.copy()
+                char_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
+                char_count = 0
+                
+                for word_idx, word_contour in enumerate(filtered_word_contours):
+                    x, y, w, h = cv2.boundingRect(word_contour)
+                    
+                    # Draw word boundary
+                    cv2.rectangle(word_char_viz, (x, y), (x + w, y + h), (0, 0, 255), 2)
+                    cv2.putText(word_char_viz, f"W{word_idx+1}", (x, y-5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
+                    
+                    # Extract word region
+                    word_image = gray[y:y+h, x:x+w]
+                    
+                    # Binarize
+                    _, word_binary = cv2.threshold(word_image, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+                    
+                    # Apply morphological operations
+                    word_binary = cv2.morphologyEx(word_binary, cv2.MORPH_CLOSE, char_kernel)
+                    
+                    # Find character contours
+                    char_contours, _ = cv2.findContours(word_binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                    
+                    # Sort characters from left to right
+                    char_contours = sorted(char_contours, key=lambda c: cv2.boundingRect(c)[0])
+                    
+                    # Draw character boundaries inside word
+                    for char_idx, char_contour in enumerate(char_contours):
+                        cx, cy, cw, ch = cv2.boundingRect(char_contour)
+                        # Skip very small contours (noise)
+                        if cw < 3 or ch < 3:
+                            continue
+                        # Draw character bounding box (global coordinates)
+                        cv2.rectangle(word_char_viz, (x + cx, y + cy), (x + cx + cw, y + cy + ch), (0, 255, 0), 1)
+                        cv2.putText(word_char_viz, f"C{char_count}", (x + cx, y + cy-2), 
+                                   cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 255, 0), 1)
+                        char_count += 1
+                
+                # Save word-character segmentation visualization
+                word_char_viz_path = os.path.join(app.config['PROCESSED_FOLDER'], f"word_char_segmented_{unique_filename}")
+                cv2.imwrite(word_char_viz_path, word_char_viz)
+                
+                # Process text with word-based approach
+                preprocessed_text, preprocessed_predictions = extract_text_as_words(preprocessed)
+                
+                # Calculate confidence scores
+                avg_confidence = np.mean([p['confidence'] for p in preprocessed_predictions]) if preprocessed_predictions else 0.0
+                
+                return jsonify({
+                    'success': True,
+                    'step': 6,
+                    'original_image': f"{base_url}static/uploads/{unique_filename}",
+                    'preprocessed_image': f"{base_url}static/processed/preprocessed_{unique_filename}",
+                    'word_segmented_image': f"{base_url}static/processed/word_segmented_{unique_filename}",
+                    'word_char_segmented_image': f"{base_url}static/processed/word_char_segmented_{unique_filename}",
+                    'message': f'{len(filtered_word_contours)} mots et {char_count} caractères détectés',
+                    'word_segmentation_info': {
+                        'words_found': len(filtered_word_contours),
+                        'characters_found': char_count,
+                        'text': preprocessed_text,
+                        'confidence': float(avg_confidence),
+                        'predictions': preprocessed_predictions
+                    }
+                })
+            
+            elif step == '7':
+                # Step 7: Tesseract recognition and comparison
+                degraded = degrade_image(image)
+                preprocessed = preprocess_image(image)
+                
+                # Save images
+                degraded_path = os.path.join(app.config['PROCESSED_FOLDER'], f"degraded_{unique_filename}")
+                preprocessed_path = os.path.join(app.config['PROCESSED_FOLDER'], f"preprocessed_{unique_filename}")
+                
+                cv2.imwrite(degraded_path, degraded)
+                cv2.imwrite(preprocessed_path, preprocessed)
+                
+                # Get text from all three methods
+                char_text, char_predictions = extract_text_with_model(preprocessed)
+                word_text, word_predictions = extract_text_as_words(preprocessed)
+                tesseract_text = extract_text_tesseract(preprocessed)
+                
+                # Calculate confidence scores
+                char_confidence = np.mean([p['confidence'] for p in char_predictions]) if char_predictions else 0.0
+                word_confidence = np.mean([p['confidence'] for p in word_predictions]) if word_predictions else 0.0
+                
+                # Create a comparison visualization
+                comparison_viz = np.ones((400, 800, 3), dtype=np.uint8) * 255
+                
+                # Add method titles
+                cv2.putText(comparison_viz, "Comparison of OCR Methods", (250, 30), 
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 0), 2)
+                
+                # Add method 1: Character-by-character
+                cv2.putText(comparison_viz, "1. Character-by-character:", (50, 80), 
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 0), 1)
+                cv2.putText(comparison_viz, f"Text: {char_text[:50]}{'...' if len(char_text) > 50 else ''}", (70, 110), 
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1)
+                cv2.putText(comparison_viz, f"Confidence: {char_confidence:.2f}", (70, 140), 
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1)
+                
+                # Add method 2: Word-based
+                cv2.putText(comparison_viz, "2. Word-based approach:", (50, 180), 
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 0), 1)
+                cv2.putText(comparison_viz, f"Text: {word_text[:50]}{'...' if len(word_text) > 50 else ''}", (70, 210), 
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1)
+                cv2.putText(comparison_viz, f"Confidence: {word_confidence:.2f}", (70, 240), 
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1)
+                
+                # Add method 3: Tesseract
+                cv2.putText(comparison_viz, "3. Tesseract OCR:", (50, 280), 
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 0), 1)
+                cv2.putText(comparison_viz, f"Text: {tesseract_text[:50]}{'...' if len(tesseract_text) > 50 else ''}", (70, 310), 
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1)
+                
+                # Add analysis
+                cv2.putText(comparison_viz, "Analysis:", (50, 350), 
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 0), 1)
+                
+                # Determine which method has higher confidence
+                if word_confidence > char_confidence:
+                    best_method = "Word-based approach"
+                    improvement = ((word_confidence - char_confidence) / char_confidence) * 100 if char_confidence > 0 else 100
+                    analysis_text = f"Word-based is {improvement:.1f}% more confident"
+                else:
+                    best_method = "Character-by-character"
+                    improvement = ((char_confidence - word_confidence) / word_confidence) * 100 if word_confidence > 0 else 100
+                    analysis_text = f"Character-by-character is {improvement:.1f}% more confident"
+                
+                cv2.putText(comparison_viz, f"Best method: {best_method}", (70, 380), 
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1)
+                cv2.putText(comparison_viz, analysis_text, (70, 410), 
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1)
+                
+                # Save comparison visualization
+                comparison_path = os.path.join(app.config['PROCESSED_FOLDER'], f"comparison_{unique_filename}")
+                cv2.imwrite(comparison_path, comparison_viz)
+                
+                return jsonify({
+                    'success': True,
+                    'step': 7,
+                    'original_image': f"{base_url}static/uploads/{unique_filename}",
+                    'preprocessed_image': f"{base_url}static/processed/preprocessed_{unique_filename}",
+                    'comparison_image': f"{base_url}static/processed/comparison_{unique_filename}",
+                    'message': 'Reconnaissance complète avec plusieurs méthodes',
+                    'recognition_results': {
+                        'character_based': {
+                            'text': char_text,
+                            'confidence': float(char_confidence),
+                            'characters_count': len(char_predictions)
+                        },
+                        'word_based': {
+                            'text': word_text,
+                            'confidence': float(word_confidence),
+                            'characters_count': len(word_predictions)
+                        },
+                        'tesseract': {
+                            'text': tesseract_text
+                        },
+                        'best_method': best_method
+                    }
+                })
+            
             else:
                 return jsonify({'success': False, 'error': 'Invalid step'}), 400
                 
@@ -655,9 +1146,44 @@ def process_step_api():
 def get_app_info():
     """API endpoint to return app information"""
     return jsonify({
-        'version': '1.0.0',
+        'version': '1.2.0',
         'name': 'OCR Vision API',
         'description': 'API for advanced OCR processing with image preprocessing techniques',
+        'features': [
+            'Character-based OCR using CNN model',
+            'Word-based OCR with contextual character recognition',
+            'Direct word recognition with character-level visualization',
+            'Tesseract OCR integration',
+            'Image preprocessing with multiple techniques',
+            'Image degradation simulation',
+            'Step-by-step OCR process visualization',
+            'Method comparison and analysis'
+        ],
+        'recognition_methods': {
+            'character_based': 'Segments individual characters for recognition',
+            'word_based': 'Segments text into words first, then characters, preserving context',
+            'direct_word': 'Directly processes words with character-level recognition and visualization',
+            'tesseract': 'Uses Tesseract OCR engine for comparison'
+        },
+        'endpoints': {
+            '/process_image': 'Process image with multiple OCR methods',
+            '/process_step': 'Step-by-step OCR process visualization',
+            '/process_word': 'Direct word recognition with character visualization',
+            '/process_with_transformations': 'Apply specific image transformations before OCR',
+            '/apply_transformation': 'Apply individual transformations for testing',
+            '/info': 'Get API information'
+        },
+        'steps': [
+            'Image loading',
+            'Image degradation',
+            'Preprocessing',
+            'Character segmentation',
+            'Character recognition',
+            'Word segmentation',
+            'Word-based recognition',
+            'Direct word recognition',
+            'Method comparison'
+        ]
     })
 
 # Add new transformation functions based on the Colab notebook
@@ -910,7 +1436,6 @@ def process_with_transformations():
             
         except Exception as e:
             print(f"Error processing image: {str(e)}")
-            import traceback
             traceback.print_exc()
             return jsonify({
                 'success': False,
@@ -1075,7 +1600,6 @@ def apply_transformation():
                 
         except Exception as e:
             print(f"Error applying transformation: {str(e)}")
-            import traceback
             traceback.print_exc()
             return jsonify({
                 'success': False,
@@ -1086,6 +1610,127 @@ def apply_transformation():
         'success': False,
         'error': 'Invalid file format. Allowed formats: ' + ', '.join(ALLOWED_EXTENSIONS)
     }), 400
+
+@app.route('/process_word', methods=['POST'])
+def process_word_api():
+    """
+    API endpoint to process an image and extract full words with direct word-based recognition
+    or character-by-character recognition based on user selection
+    """
+    if 'image' not in request.files:
+        return jsonify({'success': False, 'error': 'No image provided'}), 400
+    
+    file = request.files['image']
+    
+    if file.filename == '':
+        return jsonify({'success': False, 'error': 'No image selected'}), 400
+    
+    # Get the recognition mode (character or text)
+    recognition_mode = request.form.get('recognition_mode', 'character')
+    
+    if file and allowed_file(file.filename):
+        # Secure filename and save
+        filename = secure_filename(file.filename)
+        unique_filename = f"{uuid.uuid4().hex}_{filename}"
+        
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+        file.save(file_path)
+        
+        try:
+            # Read image
+            original_image = cv2.imread(file_path)
+            
+            # Preprocess the image
+            preprocessed = preprocess_image(original_image)
+            preprocessed_path = os.path.join(app.config['PROCESSED_FOLDER'], f"preprocessed_{unique_filename}")
+            cv2.imwrite(preprocessed_path, preprocessed)
+            
+            # Process with different methods based on the selected mode
+            if recognition_mode == 'text':
+                # Text mode: Use direct word recognition
+                original_word, original_chars = predict_word_from_image(original_image)
+                preprocessed_word, preprocessed_chars = predict_word_from_image(preprocessed)
+            else:
+                # Character mode: Use character-by-character recognition
+                char_text, char_predictions = extract_text_with_model(preprocessed)
+                original_word = ''
+                original_chars = []
+                preprocessed_word = char_text
+                preprocessed_chars = char_predictions
+            
+            # Always get other methods for comparison
+            char_text, char_predictions = extract_text_with_model(preprocessed)
+            word_text, word_predictions = extract_text_as_words(preprocessed)
+            tesseract_text = extract_text_tesseract(preprocessed)
+            
+            # Create visualization of character segmentation
+            visualization = original_image.copy()
+            for char in preprocessed_chars:
+                x, y, w, h = char['bbox']
+                confidence = char['confidence']
+                predicted_char = char['character']
+                
+                # Draw bounding box with color based on confidence
+                # More green = higher confidence
+                color = (0, int(confidence * 255), 0)
+                cv2.rectangle(visualization, (x, y), (x + w, y + h), color, 2)
+                
+                # Add character label
+                cv2.putText(visualization, predicted_char, (x, y-5), 
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+            
+            # Save visualization
+            viz_path = os.path.join(app.config['PROCESSED_FOLDER'], f"word_recognition_{unique_filename}")
+            cv2.imwrite(viz_path, visualization)
+            
+            # Calculate confidence
+            original_confidence = np.mean([c['confidence'] for c in original_chars]) if original_chars else 0.0
+            preprocessed_confidence = np.mean([c['confidence'] for c in preprocessed_chars]) if preprocessed_chars else 0.0
+            
+            # Compare methods
+            if preprocessed_confidence > original_confidence:
+                best_word = preprocessed_word
+                improvement = ((preprocessed_confidence - original_confidence) / original_confidence) * 100 if original_confidence > 0 else 100
+                comparison = f"Preprocessing improved word recognition confidence by {improvement:.1f}%"
+            else:
+                best_word = original_word if original_word else preprocessed_word
+                comparison = "Direct recognition performed better than with preprocessing"
+            
+            # Paths for frontend
+            base_url = request.url_root
+            
+            return jsonify({
+                'success': True,
+                'original_image': f"{base_url}static/uploads/{unique_filename}",
+                'preprocessed_image': f"{base_url}static/processed/preprocessed_{unique_filename}",
+                'visualization': f"{base_url}static/processed/word_recognition_{unique_filename}",
+                'recognition_mode': recognition_mode,
+                
+                # Word recognition results
+                'word_recognition': {
+                    'original_word': original_word,
+                    'preprocessed_word': preprocessed_word,
+                    'best_word': best_word,
+                    'original_confidence': float(original_confidence),
+                    'preprocessed_confidence': float(preprocessed_confidence),
+                    'comparison': comparison,
+                    'character_details': preprocessed_chars
+                },
+                
+                # Results from other methods for comparison
+                'comparison': {
+                    'character_by_character': char_text,
+                    'word_segmentation': word_text,
+                    'tesseract': tesseract_text
+                }
+            })
+            
+        except Exception as e:
+            print(f"Error in process_word_api: {e}")
+            traceback.print_exc()
+            return jsonify({'success': False, 'error': str(e)}), 500
+    
+    return jsonify({'success': False, 'error': 'File type not allowed'}), 400
 
 if __name__ == '__main__':
     app.run(debug=True, port=8080) 

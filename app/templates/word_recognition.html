@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OCR Vision Lab - Reconnaissance de Mots</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/lottie-web@5.7.8/build/player/lottie.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    animation: {
+                        blob: "blob 7s infinite",
+                        float: "float 6s ease-in-out infinite",
+                    },
+                    keyframes: {
+                        blob: {
+                            "0%": {
+                                transform: "translate(0px, 0px) scale(1)",
+                            },
+                            "33%": {
+                                transform: "translate(30px, -50px) scale(1.1)",
+                            },
+                            "66%": {
+                                transform: "translate(-20px, 20px) scale(0.9)",
+                            },
+                            "100%": {
+                                transform: "translate(0px, 0px) scale(1)",
+                            },
+                        },
+                        float: {
+                            "0%, 100%": {
+                                transform: "translateY(0)",
+                            },
+                            "50%": {
+                                transform: "translateY(-20px)",
+                            },
+                        },
+                    },
+                },
+            },
+        };
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            scroll-behavior: smooth;
+        }
+        
+        .hero-gradient {
+            background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%);
+        }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+        }
+        
+        .feature-icon {
+            border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(90deg, #4F46E5 0%, #7C3AED 100%);
+            box-shadow: 0 4px 10px rgba(124, 58, 237, 0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(124, 58, 237, 0.4);
+        }
+        
+        .animate-blob {
+            animation: blob 7s infinite;
+        }
+        
+        .animate-float {
+            animation: float 6s ease-in-out infinite;
+        }
+        
+        .delay-2000 {
+            animation-delay: 2s;
+        }
+        
+        .delay-4000 {
+            animation-delay: 4s;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="bg-white py-4 shadow-sm">
+        <div class="container mx-auto px-4 flex justify-between items-center">
+            <a href="/" class="flex items-center space-x-2">
+                <i class="fas fa-eye text-indigo-600 text-2xl"></i>
+                <span class="text-2xl font-bold text-gray-800">OCR<span class="text-indigo-600">Vision</span></span>
+            </a>
+            <nav class="hidden md:flex space-x-8">
+                <a href="/process" class="text-gray-600 hover:text-indigo-600 transition">Processus OCR</a>
+                <a href="/word_recognition" class="text-indigo-600 font-medium">Reconnaissance de Mots</a>
+                <a href="/#about" class="text-gray-600 hover:text-indigo-600 transition">À propos</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8 max-w-6xl">
+        <div class="mb-10 text-center">
+            <h1 class="text-3xl font-bold text-gray-800 mb-4">Reconnaissance de Mots Entiers</h1>
+            <p class="text-gray-600 max-w-2xl mx-auto">
+                Notre algorithme optimisé reconnaît directement les mots entiers en conservant le contexte des caractères, offrant ainsi des résultats plus précis.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+            <!-- Upload Section -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <h2 class="text-xl font-bold mb-4 text-gray-800">Téléchargez votre image</h2>
+                <p class="text-gray-600 mb-6">
+                    Sélectionnez une image contenant du texte et choisissez le mode de reconnaissance.
+                </p>
+                
+                <form id="word-recognition-form" enctype="multipart/form-data">
+                    <!-- Mode Selection -->
+                    <div class="mb-6">
+                        <h3 class="text-md font-medium text-gray-700 mb-3">Mode de reconnaissance</h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <label class="bg-white border border-gray-200 rounded-lg p-4 cursor-pointer hover:border-indigo-300 transition">
+                                <input type="radio" name="recognition_mode" value="character" class="hidden" checked>
+                                <div class="flex items-center justify-center">
+                                    <div class="w-6 h-6 rounded-full border-2 border-gray-300 flex items-center justify-center mr-3 recognition-radio">
+                                        <div class="w-3 h-3 rounded-full bg-indigo-600 hidden"></div>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-medium text-gray-800">Caractères</h4>
+                                        <p class="text-xs text-gray-500">Reconnaît chaque caractère individuellement</p>
+                                    </div>
+                                </div>
+                            </label>
+                            
+                            <label class="bg-white border border-gray-200 rounded-lg p-4 cursor-pointer hover:border-indigo-300 transition">
+                                <input type="radio" name="recognition_mode" value="text" class="hidden">
+                                <div class="flex items-center justify-center">
+                                    <div class="w-6 h-6 rounded-full border-2 border-gray-300 flex items-center justify-center mr-3 recognition-radio">
+                                        <div class="w-3 h-3 rounded-full bg-indigo-600 hidden"></div>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-medium text-gray-800">Texte complet</h4>
+                                        <p class="text-xs text-gray-500">Reconnaît le texte avec le contexte des mots</p>
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-8">
+                        <div id="upload-animation" class="w-40 h-40 mx-auto mb-4"></div>
+                        
+                        <label class="block w-full">
+                            <input type="file" id="image-upload" name="image" accept=".jpg,.jpeg,.png,.tif,.tiff,.bmp" class="hidden">
+                            <div class="btn-primary text-white font-medium py-3 px-6 rounded-full inline-flex items-center justify-center w-full cursor-pointer">
+                                <i class="fas fa-cloud-upload-alt mr-2"></i>
+                                <span>Sélectionner une image</span>
+                            </div>
+                        </label>
+                    </div>
+                    
+                    <div id="preview-container" class="w-full bg-gray-50 rounded-xl border border-gray-200 p-4 hidden mb-6">
+                        <img id="image-preview" src="" alt="Image preview" class="w-full h-auto max-h-64 object-contain mb-4 rounded-lg">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h3 id="image-name" class="font-medium text-gray-800 text-sm truncate"></h3>
+                                <p id="image-size" class="text-gray-500 text-xs"></p>
+                            </div>
+                            <button id="remove-image" class="text-red-500 hover:text-red-700 transition">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" id="process-btn" disabled class="btn-primary text-white font-medium py-3 px-6 rounded-full inline-flex items-center justify-center w-full disabled:opacity-70 disabled:cursor-not-allowed">
+                        <i class="fas fa-magic mr-2"></i>
+                        <span>Reconnaître le texte</span>
+                    </button>
+                </form>
+            </div>
+            
+            <!-- Features Section -->
+            <div class="bg-indigo-50 rounded-xl shadow-sm border border-indigo-100 p-6">
+                <h2 class="text-xl font-bold mb-4 text-indigo-800">Pourquoi la reconnaissance de mots?</h2>
+                
+                <div class="space-y-4">
+                    <!-- Feature 1 -->
+                    <div class="bg-white rounded-lg p-4 shadow-sm flex items-start">
+                        <div class="bg-indigo-100 p-2 rounded-lg mr-3">
+                            <i class="fas fa-brain text-indigo-600"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-medium text-gray-800">Analyse contextuelle</h3>
+                            <p class="text-gray-600 text-sm">Reconnaît les caractères en tenant compte de leur contexte dans le mot pour une meilleure précision.</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Feature 2 -->
+                    <div class="bg-white rounded-lg p-4 shadow-sm flex items-start">
+                        <div class="bg-indigo-100 p-2 rounded-lg mr-3">
+                            <i class="fas fa-chart-line text-indigo-600"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-medium text-gray-800">Taux de réussite supérieur</h3>
+                            <p class="text-gray-600 text-sm">Performance améliorée par rapport à la reconnaissance caractère par caractère, surtout pour les textes difficiles.</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Feature 3 -->
+                    <div class="bg-white rounded-lg p-4 shadow-sm flex items-start">
+                        <div class="bg-indigo-100 p-2 rounded-lg mr-3">
+                            <i class="fas fa-tachometer-alt text-indigo-600"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-medium text-gray-800">Traitement optimisé</h3>
+                            <p class="text-gray-600 text-sm">Algorithme spécialement conçu pour détecter efficacement les mots entiers dans différentes polices et styles.</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Feature 4 -->
+                    <div class="bg-white rounded-lg p-4 shadow-sm flex items-start">
+                        <div class="bg-indigo-100 p-2 rounded-lg mr-3">
+                            <i class="fas fa-eye text-indigo-600"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-medium text-gray-800">Visualisation avancée</h3>
+                            <p class="text-gray-600 text-sm">Visualisez chaque caractère reconnu avec son niveau de confiance directement sur l'image.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Results Section (Initially Hidden) -->
+        <div id="results-section" class="hidden">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-12">
+                <div class="mb-8">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4">Résultats de reconnaissance</h2>
+                    <p class="text-gray-600">
+                        Voici le texte reconnu à partir de votre image avec notre algorithme de reconnaissance de mots.
+                    </p>
+                </div>
+                
+                <!-- Recognition Result -->
+                <div class="bg-indigo-50 rounded-xl p-6 mb-8">
+                    <h3 class="text-xl font-semibold text-indigo-800 mb-4">Texte reconnu</h3>
+                    <div class="bg-white rounded-lg p-6 shadow-sm">
+                        <h2 id="recognized-word" class="text-3xl font-bold text-center text-indigo-700"></h2>
+                        <div class="flex justify-center mt-4">
+                            <div class="px-3 py-1 bg-indigo-100 rounded-full">
+                                <span class="text-sm text-indigo-800">Confiance: <span id="word-confidence" class="font-medium"></span></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Visualization -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-800 mb-3">Image originale</h3>
+                        <img id="original-image" src="" alt="Original image" class="w-full h-auto object-contain rounded-lg border border-gray-200 max-h-64">
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold text-indigo-800 mb-3">Visualisation des caractères</h3>
+                        <img id="visualization-image" src="" alt="Character visualization" class="w-full h-auto object-contain rounded-lg border border-indigo-200 max-h-64">
+                        <p class="text-gray-600 text-sm mt-2">La couleur verte indique le niveau de confiance (plus c'est vert, plus la confiance est élevée).</p>
+                    </div>
+                </div>
+                
+                <!-- Method Comparison -->
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-800 mb-3">Comparaison des méthodes</h3>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full bg-white rounded-lg overflow-hidden border border-gray-200">
+                            <thead class="bg-gray-50 text-gray-700">
+                                <tr>
+                                    <th class="py-2 px-4 text-left">Méthode</th>
+                                    <th class="py-2 px-4 text-left">Texte reconnu</th>
+                                    <th class="py-2 px-4 text-left">Confiance</th>
+                                </tr>
+                            </thead>
+                            <tbody id="methods-comparison" class="divide-y divide-gray-200">
+                                <!-- Table rows will be inserted by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="mt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+                    <button id="try-again-btn" class="border border-gray-300 bg-white text-gray-700 font-medium py-3 px-6 rounded-full inline-flex items-center hover:bg-gray-50">
+                        <i class="fas fa-redo mr-2"></i>
+                        <span>Essayer une autre image</span>
+                    </button>
+                    
+                    <a href="/process" class="btn-primary text-white font-medium py-3 px-6 rounded-full inline-flex items-center">
+                        <i class="fas fa-eye mr-2"></i>
+                        <span>Explorer le processus OCR complet</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-8 mt-20">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="mb-4 md:mb-0">
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-eye text-indigo-400 text-xl"></i>
+                        <span class="text-xl font-bold">OCR<span class="text-indigo-400">Vision</span></span>
+                    </div>
+                    <p class="text-gray-400 text-sm mt-2">© 2025 OCRVision Lab</p>
+                </div>
+                <div>
+                    <p class="text-gray-400 text-sm">Développé avec Python, Flask, OpenCV et TensorFlow</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            // Handle radio button selection UI
+            $('input[name="recognition_mode"]').change(function() {
+                // Hide all indicators
+                $('.recognition-radio .bg-indigo-600').addClass('hidden');
+                // Show the selected indicator
+                $(this).closest('label').find('.recognition-radio .bg-indigo-600').removeClass('hidden');
+                // Add border highlight to selected option
+                $('label').removeClass('border-indigo-500').addClass('border-gray-200');
+                $(this).closest('label').removeClass('border-gray-200').addClass('border-indigo-500');
+            });
+            
+            // Trigger change on the default checked radio button to set initial UI state
+            $('input[name="recognition_mode"]:checked').change();
+            
+            // File Upload Preview
+            $('#image-upload').change(function(e) {
+                if (e.target.files.length > 0) {
+                    const file = e.target.files[0];
+                    const url = URL.createObjectURL(file);
+                    
+                    // Display image preview
+                    $('#image-preview').attr('src', url);
+                    $('#image-name').text(file.name);
+                    
+                    // Format file size
+                    const size = file.size;
+                    let sizeStr = '';
+                    if (size < 1024) {
+                        sizeStr = size + ' bytes';
+                    } else if (size < 1024 * 1024) {
+                        sizeStr = (size / 1024).toFixed(1) + ' KB';
+                    } else {
+                        sizeStr = (size / (1024 * 1024)).toFixed(1) + ' MB';
+                    }
+                    $('#image-size').text(sizeStr);
+                    
+                    // Show preview container
+                    $('#preview-container').removeClass('hidden');
+                    
+                    // Enable process button
+                    $('#process-btn').prop('disabled', false).removeClass('opacity-70 cursor-not-allowed');
+                }
+            });
+            
+            // Remove image
+            $('#remove-image').click(function() {
+                $('#image-upload').val('');
+                $('#preview-container').addClass('hidden');
+                $('#process-btn').prop('disabled', true).addClass('opacity-70 cursor-not-allowed');
+            });
+            
+            // Try again button
+            $('#try-again-btn').click(function() {
+                $('#results-section').addClass('hidden');
+                $('#image-upload').val('');
+                $('#preview-container').addClass('hidden');
+                $('#process-btn').prop('disabled', true).addClass('opacity-70 cursor-not-allowed');
+            });
+            
+            // Form submission
+            $('#word-recognition-form').submit(function(e) {
+                e.preventDefault();
+                
+                // Disable button and show loading state
+                $('#process-btn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-2"></i><span>Traitement en cours...</span>');
+                
+                // Create FormData object
+                const formData = new FormData(this);
+                
+                // Submit the form via AJAX
+                $.ajax({
+                    url: '/process_word',
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function(response) {
+                        if (response.success) {
+                            // Display the results
+                            displayResults(response);
+                            
+                            // Reset button state
+                            $('#process-btn').prop('disabled', false).html('<i class="fas fa-magic mr-2"></i><span>Reconnaître le texte</span>');
+                            
+                            // Show results section
+                            $('#results-section').removeClass('hidden');
+                            
+                            // Scroll to results
+                            $('html, body').animate({
+                                scrollTop: $('#results-section').offset().top - 100
+                            }, 500);
+                        } else {
+                            // Show error
+                            alert('Erreur: ' + response.error);
+                            
+                            // Reset button state
+                            $('#process-btn').prop('disabled', false).html('<i class="fas fa-magic mr-2"></i><span>Reconnaître le texte</span>');
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        // Show error
+                        alert('Erreur de traitement: ' + error);
+                        
+                        // Reset button state
+                        $('#process-btn').prop('disabled', false).html('<i class="fas fa-magic mr-2"></i><span>Reconnaître le texte</span>');
+                    }
+                });
+            });
+            
+            // Function to display results
+            function displayResults(data) {
+                // Set recognized word
+                $('#recognized-word').text(data.word_recognition.best_word);
+                
+                // Set confidence
+                $('#word-confidence').text((data.word_recognition.preprocessed_confidence * 100).toFixed(2) + '%');
+                
+                // Set images
+                $('#original-image').attr('src', data.original_image);
+                $('#visualization-image').attr('src', data.visualization);
+                
+                // Clear and populate methods comparison table
+                const tableBody = $('#methods-comparison');
+                tableBody.empty();
+                
+                // Direct word recognition (original)
+                tableBody.append(`
+                    <tr>
+                        <td class="py-2 px-4">Reconnaissance directe (originale)</td>
+                        <td class="py-2 px-4 font-mono">${data.word_recognition.original_word}</td>
+                        <td class="py-2 px-4">${(data.word_recognition.original_confidence * 100).toFixed(2)}%</td>
+                    </tr>
+                `);
+                
+                // Direct word recognition (preprocessed)
+                tableBody.append(`
+                    <tr class="bg-indigo-50">
+                        <td class="py-2 px-4 font-medium text-indigo-800">Reconnaissance directe (prétraitée)</td>
+                        <td class="py-2 px-4 font-mono font-medium text-indigo-800">${data.word_recognition.preprocessed_word}</td>
+                        <td class="py-2 px-4 font-medium text-indigo-800">${(data.word_recognition.preprocessed_confidence * 100).toFixed(2)}%</td>
+                    </tr>
+                `);
+                
+                // Character-by-character approach
+                tableBody.append(`
+                    <tr>
+                        <td class="py-2 px-4">Caractère par caractère</td>
+                        <td class="py-2 px-4 font-mono">${data.comparison.character_by_character}</td>
+                        <td class="py-2 px-4">-</td>
+                    </tr>
+                `);
+                
+                // Word segmentation approach
+                tableBody.append(`
+                    <tr>
+                        <td class="py-2 px-4">Segmentation par mots</td>
+                        <td class="py-2 px-4 font-mono">${data.comparison.word_segmentation}</td>
+                        <td class="py-2 px-4">-</td>
+                    </tr>
+                `);
+                
+                // Tesseract OCR
+                tableBody.append(`
+                    <tr>
+                        <td class="py-2 px-4">Tesseract OCR</td>
+                        <td class="py-2 px-4 font-mono">${data.comparison.tesseract}</td>
+                        <td class="py-2 px-4">-</td>
+                    </tr>
+                `);
+            }
+            
+            // Load animations
+            const uploadAnimation = lottie.loadAnimation({
+                container: document.getElementById('upload-animation'),
+                renderer: 'svg',
+                loop: true,
+                autoplay: true,
+                path: 'https://assets10.lottiefiles.com/packages/lf20_GKRl5t.json'
+            });
+        });
+    </script>
+</body>
+</html> 

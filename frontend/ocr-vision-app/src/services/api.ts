@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { OCRResult, TransformationResult } from '../types/types';
+import { OCRResult, TransformationResult, WordRecognitionResult } from '../types/types';
 
 // Définir l'URL de base pour l'API
 const API_URL = 'http://localhost:8080';
@@ -68,6 +68,24 @@ export const OCRService = {
       return response.data;
     } catch (error) {
       console.error('Error processing image with transformations:', error);
+      throw error;
+    }
+  },
+  
+  // Méthode pour la reconnaissance de mots/texte avec sélection du mode
+  async processWordRecognition(
+    imageFile: File,
+    recognitionMode: 'character' | 'text' = 'character'
+  ): Promise<WordRecognitionResult> {
+    try {
+      const formData = new FormData();
+      formData.append('image', imageFile);
+      formData.append('recognition_mode', recognitionMode);
+      
+      const response = await apiClient.post('/process_word', formData);
+      return response.data;
+    } catch (error) {
+      console.error('Error processing word recognition:', error);
       throw error;
     }
   },
