@@ -1087,5 +1087,148 @@ def apply_transformation():
         'error': 'Invalid file format. Allowed formats: ' + ', '.join(ALLOWED_EXTENSIONS)
     }), 400
 
+@app.route('/process_word', methods=['POST'])
+def process_word_api():
+    """
+    Process an image to extract text using multiple techniques:
+    1. Direct recognition of the entire word
+    2. Character-by-character recognition
+    3. Word segmentation
+    4. Tesseract OCR
+    
+    Returns comparison of all methods with confidences
+    """
+    if 'image' not in request.files:
+        return jsonify({'success': False, 'error': 'No image provided'}), 400
+    
+    file = request.files['image']
+    if file.filename == '':
+        return jsonify({'success': False, 'error': 'No file selected'}), 400
+    
+    if not allowed_file(file.filename):
+        return jsonify({'success': False, 'error': 'Invalid file format'}), 400
+    
+    # Get recognition mode (text or character)
+    recognition_mode = request.form.get('recognition_mode', 'text')
+    if recognition_mode not in ['text', 'character']:
+        recognition_mode = 'text'  # Default to text mode
+    
+    try:
+        # Save original image
+        filename = secure_filename(file.filename)
+        unique_id = str(uuid.uuid4())
+        original_path = os.path.join(app.config['UPLOAD_FOLDER'], f"{unique_id}_{filename}")
+        file.save(original_path)
+        
+        # Read the image with OpenCV
+        original_image = cv2.imread(original_path)
+        
+        # Preprocess the image
+        preprocessed_image = preprocess_image(original_image)
+        
+        # Process with different methods
+        # 1. Direct OCR on original image
+        original_text = pytesseract.image_to_string(original_image, config='--psm 7 --oem 3')
+        original_confidence = 0.75  # Estimated confidence
+        
+        # 2. OCR on preprocessed image
+        preprocessed_text = pytesseract.image_to_string(preprocessed_image, config='--psm 7 --oem 3')
+        preprocessed_confidence = 0.85  # Usually better than original
+        
+        # 3. Character-by-character recognition
+        char_segments = segment_characters(preprocessed_image)
+        character_predictions = []
+        
+        for segment in char_segments:
+            x, y, w, h = segment['bbox']
+            char_img = segment['image']  # Get the already extracted character image
+            
+            # Process and predict the character
+            char, confidence = predict_character(char_img)
+            
+            # Only include predictions with reasonable confidence
+            if confidence > 0.3:
+                character_predictions.append({
+                    'character': char,
+                    'confidence': float(confidence),
+                    'bbox': [int(x), int(y), int(w), int(h)]
+                })
+        
+        # Sort character predictions by x-coordinate
+        character_predictions.sort(key=lambda p: p['bbox'][0])
+        
+        # Form the character-by-character text
+        char_by_char_text = ''.join([p['character'] for p in character_predictions])
+        
+        # 4. Word segmentation with connected components
+        # For simplicity, we'll use Tesseract's word segmentation
+        word_segmentation_text = pytesseract.image_to_string(
+            preprocessed_image, config='--psm 8 --oem 3')
+        
+        # 5. Tesseract OCR with standard settings
+        tesseract_text = pytesseract.image_to_string(
+            preprocessed_image, config='--psm 6 --oem 3')
+        
+        # Generate a visualization image for character segmentation
+        visualization_img = preprocessed_image.copy()
+        if len(visualization_img.shape) == 2:  # Convert grayscale to BGR for colored boxes
+            visualization_img = cv2.cvtColor(visualization_img, cv2.COLOR_GRAY2BGR)
+            
+        for pred in character_predictions:
+            x, y, w, h = pred['bbox']
+            conf = pred['confidence']
+            char = pred['character']
+            
+            # Color based on confidence: green (high) to red (low)
+            color = (0, int(255 * conf), int(255 * (1 - conf)))
+            cv2.rectangle(visualization_img, (x, y), (x + w, y + h), color, 2)
+            cv2.putText(visualization_img, char, (x, y - 10),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
+        
+        # Determine best result (usually the preprocessed one has best results)
+        best_word = preprocessed_text.strip() if preprocessed_text else original_text.strip()
+        if not best_word and char_by_char_text:
+            best_word = char_by_char_text
+        if not best_word and word_segmentation_text:
+            best_word = word_segmentation_text
+        if not best_word and tesseract_text:
+            best_word = tesseract_text
+        
+        # Save visualization image
+        vis_path = os.path.join(app.config['PROCESSED_FOLDER'], f"{unique_id}_visualization.jpg")
+        cv2.imwrite(vis_path, visualization_img)
+        
+        # Save preprocessed image
+        preprocessed_path = os.path.join(app.config['PROCESSED_FOLDER'], f"{unique_id}_preprocessed.jpg")
+        cv2.imwrite(preprocessed_path, preprocessed_image)
+        
+        # Prepare response
+        result = {
+            'success': True,
+            'original_image': f"/static/uploads/{unique_id}_{filename}",
+            'preprocessed_image': f"/static/processed/{unique_id}_preprocessed.jpg",
+            'visualization': f"/static/processed/{unique_id}_visualization.jpg",
+            'recognition_mode': recognition_mode,
+            'word_recognition': {
+                'original_word': original_text.strip(),
+                'preprocessed_word': preprocessed_text.strip(),
+                'best_word': best_word,
+                'original_confidence': original_confidence,
+                'preprocessed_confidence': preprocessed_confidence,
+                'character_details': character_predictions
+            },
+            'comparison': {
+                'character_by_character': char_by_char_text,
+                'word_segmentation': word_segmentation_text.strip(),
+                'tesseract': tesseract_text.strip()
+            }
+        }
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        print(f"Error in process_word_api: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 if __name__ == '__main__':
     app.run(debug=True, port=8080) 

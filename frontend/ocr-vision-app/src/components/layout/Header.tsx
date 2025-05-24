@@ -49,9 +49,8 @@ const Header: React.FC = () => {
             >
               {t('header.howItWorks')}
             </a>
-            <Link to="/process" className="text-gray-600 hover:text-indigo-600 transition">
-              {t('header.process')}
-            </Link>
+            
+            
           </nav>
           <LanguageSwitcher />
         </div>

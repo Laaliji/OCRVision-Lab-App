@@ -110,4 +110,31 @@ declare global {
   interface Window {
     html2canvas: (element: HTMLElement, options?: any) => Promise<HTMLCanvasElement>;
   }
+}
+
+export interface WordRecognitionResult {
+  success: boolean;
+  error?: string;
+  original_image: string;
+  preprocessed_image: string;
+  visualization: string;
+  recognition_mode: 'character' | 'text';
+  
+  // Word recognition results
+  word_recognition: {
+    original_word: string;
+    preprocessed_word: string;
+    best_word: string;
+    original_confidence: number;
+    preprocessed_confidence: number;
+    comparison: string;
+    character_details: CharacterPrediction[];
+  };
+  
+  // Results from other methods for comparison
+  comparison: {
+    character_by_character: string;
+    word_segmentation: string;
+    tesseract: string;
+  };
 } 
