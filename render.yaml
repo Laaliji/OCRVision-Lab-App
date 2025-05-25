@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: ocr-vision-app
+    runtime: python
+    buildCommand: "./build.sh && pip install -r requirements.txt && cd frontend/ocr-vision-app && npm install && npm run build && cd ../.. && mkdir -p app/static/build && cp -r frontend/ocr-vision-app/build/* app/static/build/"
+    startCommand: "gunicorn app:app"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.9.0
+      - key: TESSERACT_PATH
+        value: /usr/bin/tesseract
+      - key: SECRET_KEY
+        generateValue: true
+    healthCheckPath: /info 

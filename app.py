@@ -8,22 +8,34 @@ import json
 import random
 from PIL import Image, ImageEnhance
 from io import BytesIO
-from flask import Flask, render_template, request, jsonify, url_for, flash, redirect
+from flask import Flask, render_template, request, jsonify, url_for, flash, redirect, send_from_directory
 from werkzeug.utils import secure_filename
 from flask_cors import CORS
 import uuid
 import string
+from dotenv import load_dotenv
 
-# Chemin vers l'exécutable Tesseract (vérifiez le chemin réel après installation)
-pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
-# Si l'installation est dans un autre emplacement, utilisez plutôt:
-# pytesseract.pytesseract.tesseract_cmd = r'C:\Users\hp\AppData\Local\Programs\Tesseract-OCR\tesseract.exe'
+# Load environment variables
+load_dotenv()
+
+# Tesseract configuration based on environment
+if os.environ.get('TESSERACT_PATH'):
+    pytesseract.pytesseract.tesseract_cmd = os.environ.get('TESSERACT_PATH')
+elif os.path.exists(r'C:\Program Files\Tesseract-OCR\tesseract.exe'):
+    pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+# On Linux/Unix systems, Tesseract is usually in the PATH
+
+# Configure static folder based on environment
+static_folder = 'app/static'
+if os.path.exists('app/static/build'):
+    # If React build folder exists, use it for serving static files
+    static_folder = 'app/static/build'
 
 app = Flask(__name__, 
             template_folder='app/templates',
-            static_folder='app/static')
-CORS(app)  # Activer CORS pour toutes les routes
-app.secret_key = 'ocr_vision_secret_key'
+            static_folder=static_folder)
+CORS(app)  # Enable CORS for all routes
+app.secret_key = os.environ.get('SECRET_KEY', 'ocr_vision_secret_key')
 
 # Configuration
 UPLOAD_FOLDER = os.path.join('app', 'static', 'uploads')
@@ -348,9 +360,32 @@ def image_to_base64(image):
     img_str = base64.b64encode(buffer).decode('utf-8')
     return f"data:image/jpeg;base64,{img_str}"
 
-@app.route('/')
-def index():
-    return render_template('index.html')
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def serve(path):
+    # If the path is an API endpoint, 404 will be returned and handled by the appropriate route
+    if path.startswith('api/'):
+        return '', 404
+        
+    # For any non-API route, serve the React app
+    if os.path.exists('app/static/build'):
+        # In production, serve the built React app
+        if path != "" and os.path.exists(f"app/static/build/{path}"):
+            return send_from_directory('app/static/build', path)
+        else:
+            return send_from_directory('app/static/build', 'index.html')
+    else:
+        # In development, serve a simple page
+        return """
+        <html>
+            <head><title>OCR Vision App API</title></head>
+            <body>
+                <h1>OCR Vision App API Server</h1>
+                <p>This is the API server for OCR Vision App.</p>
+                <p>The frontend is not built. Please run the React development server.</p>
+            </body>
+        </html>
+        """
 
 @app.route('/process', methods=['GET', 'POST'])
 def process():
@@ -1231,4 +1266,5 @@ def process_word_api():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True, port=8080) 
+    port = int(os.environ.get('PORT', 8080))
+    app.run(host='0.0.0.0', port=port) 
