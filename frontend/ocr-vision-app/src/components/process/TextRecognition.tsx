@@ -302,33 +302,28 @@ const TextRecognition: React.FC = () => {
             <div className="bg-indigo-50 p-4 rounded-lg">
               <ol className="list-decimal ml-6 space-y-2 text-gray-700">
                 <li>
-                  <span className="font-medium">Image Preprocessing:</span> The uploaded image is converted to grayscale, 
-                  resized, and enhanced with adaptive thresholding to improve text visibility.
+                  <span className="font-medium">{t('textRecognition.process.step1.title')}</span> {t('textRecognition.process.step1.desc')}
                 </li>
                 <li>
-                  <span className="font-medium">Character Segmentation:</span> The preprocessed image is analyzed to 
-                  identify and isolate individual characters using contour detection algorithms.
+                  <span className="font-medium">{t('textRecognition.process.step2.title')}</span> {t('textRecognition.process.step2.desc')}
                 </li>
                 <li>
-                  <span className="font-medium">Character Preprocessing:</span> Each extracted character image is:
+                  <span className="font-medium">{t('textRecognition.process.step3.title')}</span>
                   <ul className="list-disc ml-6 mt-1 text-gray-600">
-                    <li>Converted to grayscale</li>
-                    <li>Resized to 32x32 pixels</li>
-                    <li>Standardized with pixel values scaled between 0-1</li>
-                    <li>Reshaped to match the model's input requirements</li>
+                    <li>{t('textRecognition.process.step3.item1')}</li>
+                    <li>{t('textRecognition.process.step3.item2')}</li>
+                    <li>{t('textRecognition.process.step3.item3')}</li>
+                    <li>{t('textRecognition.process.step3.item4')}</li>
                   </ul>
                 </li>
                 <li>
-                  <span className="font-medium">Character Prediction:</span> Each preprocessed character is fed into 
-                  the trained neural network model (MobileNetV2) to predict the character.
+                  <span className="font-medium">{t('textRecognition.process.step4.title')}</span> {t('textRecognition.process.step4.desc')}
                 </li>
                 <li>
-                  <span className="font-medium">Character Ordering:</span> Predicted characters are arranged based on 
-                  their spatial positions in the original image (sorted by x-coordinates).
+                  <span className="font-medium">{t('textRecognition.process.step5.title')}</span> {t('textRecognition.process.step5.desc')}
                 </li>
                 <li>
-                  <span className="font-medium">Text Construction:</span> The ordered characters are combined to form 
-                  the final recognized text.
+                  <span className="font-medium">{t('textRecognition.process.step6.title')}</span> {t('textRecognition.process.step6.desc')}
                 </li>
               </ol>
             </div>

@@ -24,6 +24,15 @@ const TypingEffect: React.FC<TypingEffectProps> = ({
   const [isTyping, setIsTyping] = useState(true);
   const [isPaused, setIsPaused] = useState(false);
   const [currentRepeat, setCurrentRepeat] = useState(0);
+  
+  // Reset state when texts array changes (i.e., language changes)
+  useEffect(() => {
+    setCurrentTextIndex(0);
+    setCurrentText('');
+    setIsTyping(true);
+    setIsPaused(false);
+    setCurrentRepeat(0);
+  }, [texts]); // Add texts as a dependency to detect language changes
 
   // Effet pour gérer l'animation de frappe
   useEffect(() => {

@@ -7,60 +7,45 @@ interface ProcessStepperProps {
   steps: ProcessStep[];
   currentStep: number;
   progress: number;
-  onStepClick?: (stepNumber: number) => void;
 }
 
-const ProcessStepper: React.FC<ProcessStepperProps> = ({ steps, currentStep, progress, onStepClick }) => {
-  const handleStepClick = (stepNumber: number) => {
-    // Only allow clicking on completed steps or the current step
-    if (onStepClick && (stepNumber <= currentStep)) {
-      onStepClick(stepNumber);
-    }
-  };
-  
+const ProcessStepper: React.FC<ProcessStepperProps> = ({ steps, currentStep, progress }) => {
   return (
-    <div className="mb-10">
-      {/* Progress bar */}
-      <div className="w-full bg-gray-200 rounded-full h-2.5 mb-6">
-        <div 
-          className="bg-indigo-600 h-2.5 rounded-full transition-all duration-500 ease-in-out" 
-          style={{ width: `${progress}%` }}
-        ></div>
-      </div>
-      
-      {/* Steps */}
-      <div className="flex justify-between">
-        {steps.map(step => (
+    <div className="mb-12">
+      {/* Progress Bar */}
+      <div className="relative mb-16">
+        <div className="w-full h-2 bg-gray-200 rounded-full">
           <div 
-            key={step.id}
-            className={`flex flex-col items-center cursor-pointer transition-colors ${
-              step.id <= currentStep ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'
-            }`}
-            onClick={() => handleStepClick(step.id)}
-          >
-            <div className={`
-              w-10 h-10 flex items-center justify-center rounded-full mb-2
-              ${step.isActive ? 'bg-indigo-600 text-white' : 
-                step.isCompleted ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-500'}
-              transition-colors duration-300
-            `}>
-              {step.isCompleted ? (
-                <FontAwesomeIcon icon={faCheck} />
-              ) : (
-                step.id
-              )}
-            </div>
-            <div className="text-center">
-              <p className={`text-sm font-medium ${
-                step.isActive ? 'text-indigo-600' : 
-                step.isCompleted ? 'text-green-600' : 'text-gray-500'
-              }`}>
-                {step.title}
-              </p>
-              <p className="text-xs text-gray-500 hidden md:block">{step.description}</p>
-            </div>
+            className="h-full bg-indigo-500 rounded-full transition-all duration-300" 
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+
+        {/* Step Indicators */}
+        <div className="absolute -top-2 left-0 right-0">
+          <div className="flex justify-between">
+            {steps.map((step) => (
+              <div key={step.id} className="relative w-24 text-center">
+                <div className={`
+                  w-6 h-6 mx-auto rounded-full flex items-center justify-center text-sm font-bold mb-2 relative z-10
+                  ${step.isCompleted 
+                    ? 'bg-green-500 text-white' 
+                    : step.isActive 
+                      ? 'bg-indigo-500 text-white' 
+                      : 'bg-gray-300 text-white'}
+                `}>
+                  {step.isCompleted ? <FontAwesomeIcon icon={faCheck} /> : step.id}
+                </div>
+                <p className={`
+                  text-xs font-medium mt-2
+                  ${step.isActive || step.isCompleted ? 'text-gray-700' : 'text-gray-500'}
+                `}>
+                  {step.title}
+                </p>
+              </div>
+            ))}
           </div>
-        ))}
+        </div>
       </div>
     </div>
   );
