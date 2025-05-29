@@ -34,7 +34,11 @@ if os.path.exists('app/static/build'):
 app = Flask(__name__, 
             template_folder='app/templates',
             static_folder=static_folder)
-CORS(app)  # Enable CORS for all routes
+
+# Configure CORS to allow requests from Netlify frontend
+NETLIFY_URL = os.environ.get('NETLIFY_URL', '*')
+CORS(app, origins=[NETLIFY_URL, 'http://localhost:3000'])
+
 app.secret_key = os.environ.get('SECRET_KEY', 'ocr_vision_secret_key')
 
 # Configuration

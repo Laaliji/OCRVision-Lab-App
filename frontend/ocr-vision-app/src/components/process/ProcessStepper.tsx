@@ -7,9 +7,10 @@ interface ProcessStepperProps {
   steps: ProcessStep[];
   currentStep: number;
   progress: number;
+  onStepClick?: (stepNumber: number) => void;
 }
 
-const ProcessStepper: React.FC<ProcessStepperProps> = ({ steps, currentStep, progress }) => {
+const ProcessStepper: React.FC<ProcessStepperProps> = ({ steps, currentStep, progress, onStepClick }) => {
   return (
     <div className="mb-12">
       {/* Progress Bar */}
@@ -25,7 +26,12 @@ const ProcessStepper: React.FC<ProcessStepperProps> = ({ steps, currentStep, pro
         <div className="absolute -top-2 left-0 right-0">
           <div className="flex justify-between">
             {steps.map((step) => (
-              <div key={step.id} className="relative w-24 text-center">
+              <div 
+                key={step.id} 
+                className="relative w-24 text-center"
+                onClick={() => onStepClick && onStepClick(step.id)}
+                style={{ cursor: onStepClick ? 'pointer' : 'default' }}
+              >
                 <div className={`
                   w-6 h-6 mx-auto rounded-full flex items-center justify-center text-sm font-bold mb-2 relative z-10
                   ${step.isCompleted 

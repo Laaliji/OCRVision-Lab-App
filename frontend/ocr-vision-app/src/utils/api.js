@@ -2,9 +2,10 @@ import axios from 'axios';
 
 // Determine the API base URL based on environment
 const getBaseUrl = () => {
-  // In production, API requests go to the same domain (no need for proxy)
+  // In production, API requests go to the Heroku backend
   if (process.env.NODE_ENV === 'production') {
-    return '';
+    // Replace this URL with your actual Heroku app URL once created
+    return process.env.REACT_APP_API_URL || 'https://ocr-vision-app-backend.herokuapp.com';
   }
   // In development, use the proxy from package.json or explicit URL
   return process.env.REACT_APP_API_URL || 'http://localhost:8080';
