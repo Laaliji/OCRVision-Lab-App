@@ -1,3 +1,4 @@
+#Configuration initiale
 import os
 import cv2
 import numpy as np
@@ -34,14 +35,12 @@ if os.path.exists('app/static/build'):
 app = Flask(__name__, 
             template_folder='app/templates',
             static_folder=static_folder)
-
-# Configure CORS to allow requests from Netlify frontend
-NETLIFY_URL = os.environ.get('NETLIFY_URL', '*')
-CORS(app, origins=[NETLIFY_URL, 'http://localhost:3000'])
-
+CORS(app)  # Enable CORS for all routes
 app.secret_key = os.environ.get('SECRET_KEY', 'ocr_vision_secret_key')
 
-# Configuration
+
+
+# Configuration des dossiers et du modèle
 UPLOAD_FOLDER = os.path.join('app', 'static', 'uploads')
 PROCESSED_FOLDER = os.path.join('app', 'static', 'processed')
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'tif', 'tiff', 'bmp'}
@@ -68,6 +67,9 @@ except Exception as e:
 CHARACTER_CLASSES = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 INDEX_TO_CHAR = {i: char for i, char in enumerate(CHARACTER_CLASSES)}
 
+# Fonctions de traitement d'image
+
+#vérifie si le fichier uploadé a une extension autorisée
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
@@ -163,6 +165,8 @@ def preprocess_image(image):
     
     return final
 
+#Prétraitement pour le modèle
+##Préparer l'image pour l'entrée du modèle de deep learning
 def preprocess_for_model(image_segment):
     """
     Preprocess image segment for the trained model
@@ -187,6 +191,7 @@ def preprocess_for_model(image_segment):
         print(f"Error in preprocess_for_model: {e}")
         return None
 
+##isoler les charactères individuels dans une image
 def segment_characters(image):
     """
     Segment individual characters from the image using contour detection
@@ -257,6 +262,8 @@ def segment_characters(image):
     except Exception as e:
         print(f"Error in segment_characters: {str(e)}")
         return []
+    
+#Prédiction des caractères
 
 def predict_character(char_image):
     """
@@ -302,6 +309,8 @@ def predict_character(char_image):
         print(f"Error in predict_character: {str(e)}")
         return '?', 0.0
 
+#extraction du texte avec le modèle de deep learning
+
 def extract_text_with_model(image):
     """
     Extract text using the trained model for character recognition
@@ -335,7 +344,8 @@ def extract_text_with_model(image):
     except Exception as e:
         print(f"Error in extract_text_with_model: {e}")
         return "Error in model prediction", []
-
+    
+## extraction du texte avec Tesseract OCR
 def extract_text_tesseract(image):
     """
     Extract text using traditional Tesseract OCR
@@ -357,13 +367,14 @@ def extract_text_tesseract(image):
     except Exception as e:
         print(f"Error in extract_text_tesseract: {e}")
         return "Error in Tesseract OCR"
-
+#Convertit une image OpenCV en chaîne base64 pour l'affichage dans le navigateur.
 def image_to_base64(image):
     # Convert OpenCV image to base64 string
     _, buffer = cv2.imencode('.jpg', image)
     img_str = base64.b64encode(buffer).decode('utf-8')
     return f"data:image/jpeg;base64,{img_str}"
 
+# Routes de l'API Flask
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
 def serve(path):
@@ -506,6 +517,7 @@ def process_image_api():
     
     return jsonify({'success': False, 'error': 'File type not allowed'}), 400
 
+#étapes distinctes pour une meilleure visualisation pédagogique
 @app.route('/process_step', methods=['POST'])
 def process_step_api():
     """
